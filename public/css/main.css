@@ -1,0 +1,32 @@
+@font-face {
+    font-family: BroshkLime;
+    src: url("../fonts/BroshkLime-BWL5n.ttf");
+}
+
+@font-face {
+    font-family: Valera;
+    src: url("../fonts/VarelaRound-Regular.ttf");
+}
+
+.chat-window::-webkit-scrollbar {
+    display: none;
+}
+
+/* width */
+.contacts::-webkit-scrollbar {
+    width: 20px;
+}
+
+/* Track */
+.contacts::-webkit-scrollbar-track {
+    box-shadow: inset 0 0 1px grey;
+    border-radius: 10px;
+}
+
+/* Handle */
+.contacts::-webkit-scrollbar-thumb {
+    background: rgb(34 197 94);
+    border-radius: 10px;
+}
+
+
