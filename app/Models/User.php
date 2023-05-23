@@ -102,17 +102,36 @@ class User extends Authenticatable
 
     public function friends(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'friendship', 'user_id', 'friend_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'friendship', 'user_id', 'friend_id')->wherePivot('status', 'accepted')->withTimestamps();
     }
 
     public function isFriendOf(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'friendship', 'friend_id', 'user_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'friendship', 'friend_id', 'user_id')->wherePivot('status', 'accepted')->withTimestamps();
+    }
+
+    public function inRequestFriends(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'friendship', 'user_id', 'friend_id')->wherePivot('status', 'pending')->withTimestamps();
+    }
+
+    public function isRequestingToBeFriend(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'friendship', 'friend_id', 'user_id')->wherePivot('status', 'pending')->withTimestamps();
     }
 
     public function joined_groups(): BelongsToMany
     {
-        return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id')->withTimestamps();
+        return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id')
+            ->withTimestamps()
+            ->wherePivot('status', 'accepted');
+    }
+
+    public function pending_groups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_user', 'user_id', 'group_id')
+            ->withTimestamps()
+            ->wherePivot('status', 'pending');
     }
 
     public function admin_of_groups(): HasMany

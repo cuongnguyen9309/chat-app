@@ -1,4 +1,4 @@
-<thead class=" font-['Valera'] text-sm text-left">
+<thead class="thead font-['Valera'] text-sm text-left">
 <tr class="">
     <th class="w-[1rem]"></th>
     {{$slot}}

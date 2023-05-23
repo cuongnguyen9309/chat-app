@@ -10,25 +10,16 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class SendChatEvent implements ShouldBroadcast
+class ReceivedFriendRequest implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * Create a new event instance.
      */
-    public string $channel;
-
-    public function __construct(public $message)
+    public function __construct(public $id)
     {
-        if ($this->message['type'] === 'user') {
-            $idArray = array($this->message['sender_id'], $this->message['receiver_id']);
-            sort($idArray);
-            $channel = "chat-user_{$idArray[0]}_{$idArray[1]}";
-        } else {
-            $channel = "chat-group_{$this->message['receiver_id']}";
-        }
-        $this->channel = $channel;
+        //
     }
 
     /**
@@ -39,9 +30,7 @@ class SendChatEvent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel($this->channel),
+            new Channel($this->id),
         ];
     }
-
-
 }

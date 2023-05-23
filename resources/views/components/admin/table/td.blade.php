@@ -1,2 +1,2 @@
 @props(['odd'=>false])
-<td class="px-5 py-2 {{$odd ? 'bg-gray-100' : ''}}">{{$slot}}</td>
+<td class="td text-gray-300 px-5 py-2 {{$odd ? 'bg-gray-700' : ''}}">{{$slot}}</td>

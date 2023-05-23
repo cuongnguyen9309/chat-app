@@ -14,7 +14,14 @@ class FriendSeeder extends Seeder
     public function run(): void
     {
         foreach (User::all() as $user) {
-            $user->friends()->attach(User::all()->random(rand(0, 4))->pluck('id')->toArray());
+            $friends = User::all()->random(rand(0, 4));
+            $friends = $friends->reject(function ($item) use ($user) {
+                return $item->id === $user->id;
+            });
+            $user->friends()->syncWithoutDetaching($friends->pluck('id')->toArray());
+            foreach ($friends as $friend) {
+                $friend->friends()->syncWithoutDetaching($user->id);
+            }
         }
     }
 }

@@ -13,9 +13,9 @@ return new class extends Migration {
         Schema::create('groups', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->unsignedBigInteger('admin_id');
+            $table->unsignedBigInteger('admin_id')->nullable();
             $table->unsignedBigInteger('created_by');
-            $table->text('image_url')->default('default-avatar.png');
+            $table->text('image_url')->default('images/avatars/default-avatar.png');
             $table->timestamps();
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('admin_id')->references('id')->on('users');

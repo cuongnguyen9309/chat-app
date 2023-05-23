@@ -19,7 +19,6 @@ class GroupFactory extends Factory
     {
         return [
             'name' => fake()->name(),
-            'admin_id' => User::all()->random(),
             'created_by' => User::all()->random()
         ];
     }

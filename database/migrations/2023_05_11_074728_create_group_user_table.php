@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->primary(['group_id', 'user_id']);
             $table->foreign('group_id')->references('id')->on('groups');
             $table->foreign('user_id')->references('id')->on('users');
+            $table->string('status')->default('pending');
             $table->timestamps();
         });
     }

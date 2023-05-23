@@ -15,7 +15,9 @@ class UserGroupSeeder extends Seeder
     public function run(): void
     {
         foreach (Group::all() as $group) {
-            $group->users()->attach(User::all()->random(rand(1, 3))->pluck('id')->toArray());
+            $users = User::all()->random(rand(1, 3))->pluck('id')->toArray();
+            $group->users()->attach($users, ['status' => 'accepted']);
+            $group->update(['admin_id' => $users[0]]);
         }
     }
 }

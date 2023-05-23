@@ -30,7 +30,8 @@
         <h2 class="text-3xl font-bold mb-[3rem]">Login</h2>
         <div class="form-control mb-5">
             <div class="input-wrapper flex items-center py-3 border-b-[1.5px] border-gray-400 mb-5">
-                <input class="w-full bg-transparent focus:outline-none" type="email" placeholder="Email address"
+                <input class="w-full border-0 bg-transparent focus:outline-none" type="email"
+                       placeholder="Email address"
                        name="email">
                 <i class="fa-solid fa-envelope"></i>
             </div>
@@ -40,7 +41,7 @@
         </div>
         <div class="form-control mb-5">
             <div class="input-wrapper flex items-center py-3  border-b-[1.5px] border-gray-400">
-                <input id="passwordInput" class="w-full bg-transparent focus:outline-none" type="password"
+                <input id="passwordInput" class="w-full border-0 bg-transparent focus:outline-none" type="password"
                        placeholder="Password" name="password">
                 <i id="passwordVisibility" class="fa-solid fa-eye text-gray-600"></i>
             </div>
