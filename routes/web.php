@@ -39,6 +39,7 @@ Route::get('/user/{id?}', [ClientUserController::class, 'getUser'])->name('user.
 Route::get('/user/add-friend/{id?}', [ClientUserController::class, 'addFriend'])->name('friend.add');
 Route::get('/user/accept-friend/{id?}', [ClientUserController::class, 'acceptFriend'])->name('friend.accept');
 Route::get('/user/remove-friend/{id?}', [ClientUserController::class, 'removeFriend'])->name('friend.remove');
+Route::post('/user/message/retrieve', [ClientUserController::class, 'retrieveMessage'])->name('user.message.retrieve');
 
 Route::post('/group', [ClientGroupController::class, 'store'])->name('group.store');
 Route::get('/group/accept/{id?}', [ClientGroupController::class, 'acceptGroup'])->name('group.accept');

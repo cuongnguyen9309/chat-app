@@ -65,9 +65,11 @@
             @csrf
             <div
                 class="relative flex w-full bg-gray-200 rounded-md">
-                <textarea placeholder="Enter your message"
-                          class="w-full resize-none bg-gray-200 focus:outline-none focus:placeholder-gray-400 text-gray-600 rounded-md placeholder-gray-600 py-3 px-5"
-                          rows="1"></textarea>
+                <textarea
+                    id="chat-textarea"
+                    placeholder="Enter your message"
+                    class="w-full resize-none bg-gray-200 focus:outline-none focus:placeholder-gray-400 text-gray-600 rounded-md placeholder-gray-600 py-3 px-5"
+                    rows="1"></textarea>
                 <div class=" items-center inset-y-0 flex">
                     <button
                         class="flex items-center justify-center rounded-full h-10 w-10 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none">
@@ -157,24 +159,104 @@
 </div>
 
 <script>
-    {{--    chatOwner:
+    /*   chatOwner: For message side decision
             USER = 0
-             OTHER = sender_id--}}
+             PARTNER = sender_id*/
     let currPartnerKey = '';
     let addFriendId = 0;
     let chatWindowStatus = [];
     // HTML element reuse
     const sidebarContactWrapper = $('#sidebar-contact-wrapper');
     const chatInputForm = $('#chat-input-form');
-    const tx = document.getElementsByTagName("textarea");
-    for (let i = 0; i < tx.length; i++) {
-        tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
-        tx[i].addEventListener("input", OnInput, false);
+    const chatTextArea = document.querySelector('#chat-textarea');
+
+    /* Create intersection observer for infinite loading */
+    function loadMoreOnScroll(entries, observer) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                observer.unobserve(entry.target);
+                const [partner_type, partner_id] = currPartnerKey.split('-');
+                const partner_key = currPartnerKey;
+                const oldScrollHeight = $(`#chat-window`)[0].scrollHeight;
+                $.ajax({
+                    url: "{{route('user.message.retrieve')}}",
+                    type: "POST",
+                    data: {
+                        headTime: chatWindowStatus[currPartnerKey].headTime,
+                        partner_type,
+                        partner_id
+                    },
+                    success: function (res) {
+                        const messages = res.messages;
+                        const senders_id = messages.map(message => message.sender_id);
+                        if (messages.length < 10) {
+                            chatWindowStatus[partner_key].olderMessages = false;
+                        }
+                        messages.forEach((messageInfo, index) => {
+                            let message;
+                            let messageBlock;
+                            if (chatWindowStatus[partner_key]) {/* Check if the chat window for this convo has been registered  */
+                                const sender_id = translateSenderId(messageInfo.sender_id);/* Translate sender_id into 0,1
+                                with O is user and 1 is for partner */
+
+                                if (index === 0) {/* Remove previous message name tag if it's from the same sender */
+                                    if (chatWindowStatus[partner_key].headChatOwner == sender_id) {
+                                        $(`#${partner_key}`).find('.message').first().find('.user-name').remove();
+                                    }
+                                }
+
+                                if (messageInfo.sender_id != senders_id[index + 1]) {/* Create message, add name tag or not depend on the next message sender */
+                                    message = createMessage(messageInfo.content, chatWindowStatus[partner_key].headChatOwner, messageInfo.sender_name);
+                                } else {
+                                    message = createMessage(messageInfo.content, chatWindowStatus[partner_key].headChatOwner);
+                                }
+
+                                if (chatWindowStatus[partner_key].headChatOwner == sender_id) {/* Create or get the previous message block */
+                                    messageBlock = $('.message-block', `#${partner_key}`).first();
+                                } else {
+                                    chatWindowStatus[partner_key].headChatOwner = sender_id;
+                                    messageBlock = createMessageBlock(messageInfo);
+                                    $(`#${partner_key}`).prepend(messageBlock);
+                                }
+                                chatWindowStatus[partner_key].headTime = messageInfo.created_at;
+                                messageBlock.find('.messages-wrapper').prepend(message);
+                            }
+                        })
+                        const newScrollHeight = $(`#chat-window`)[0].scrollHeight;
+                        $(`#chat-window`)[0].scrollTo(0, newScrollHeight - oldScrollHeight);/* Fix window jump to top on prepend */
+                        if (chatWindowStatus[partner_key].olderMessages) {/*Only add intersection event again if there's still messages to be loaded */
+                            observer.observe($(`#${partner_key}`).find('.message').first()[0]);
+                        }
+                    },
+                    error: function (xhr) {
+                        xhr = JSON.parse(xhr.responseText);
+                        alert(xhr.message);
+                    }
+                })
+            }
+        })
     }
 
+    const chatWindow = {
+        root: document.querySelector('#chat-window'),
+        rootMargin: '0px',
+        threshold: 1,
+    };
+    const observer = new IntersectionObserver(loadMoreOnScroll, chatWindow);
+    /********/
+
+    /* Expand textarea on newline */
     function OnInput() {
         this.style.height = 0;
         this.style.height = (this.scrollHeight) + "px";
+    }
+
+    chatTextArea.setAttribute("style", "height:" + (chatTextArea.scrollHeight) + "px;overflow-y:hidden;");
+    chatTextArea.addEventListener("input", OnInput, false);
+
+    /******/
+    function translateSenderId($id) {
+        return ($id == {{Auth::id()}} ? 0 : $id);
     }
 
     function createChatWindow(partner_key) {
@@ -219,20 +301,21 @@
 
     function showMessage(messageInfo) {
         let partner_key = '';
-        if (messageInfo['receiver_type'] === 'user') {
+        if (messageInfo['receiver_type'] === 'user') {/* create partner key */
             partner_key = messageInfo.sender_id == {{Auth::id()}} ? `user-${messageInfo['receiver_id']}` : `user-${messageInfo['sender_id']}`;
         } else {
             partner_key = `${messageInfo['receiver_type']}-${messageInfo['receiver_id']}`;
         }
         let message;
-        if (chatWindowStatus[partner_key]) {
-            const sender_id = messageInfo.sender_id == {{Auth::id()}} ? 0 : messageInfo.sender_id;
+        if (chatWindowStatus[partner_key]) {/* Check if the chat window for this convo has been registered  */
+            const sender_id = translateSenderId(messageInfo.sender_id);
             let messageBlock = '';
             if (chatWindowStatus[partner_key].tailChatOwner == sender_id) {
-                message = createMessage(messageInfo.content, chatWindowStatus[partner_key].tailChatOwner);
                 if ($('.message-block', `#${partner_key}`).length) {
+                    message = createMessage(messageInfo.content, chatWindowStatus[partner_key].tailChatOwner);
                     messageBlock = $('.message-block', `#${partner_key}`).last();
                 } else {
+                    message = createMessage(messageInfo.content, chatWindowStatus[partner_key].tailChatOwner, messageInfo.sender_name);
                     messageBlock = createMessageBlock(messageInfo);
                     $(`#${partner_key}`).append(messageBlock);
                 }
@@ -243,6 +326,9 @@
                 $(`#${partner_key}`).append(messageBlock);
             }
             messageBlock.find('.messages-wrapper').append(message);
+        }
+        if (currPartnerKey === partner_key) {
+            message[0].scrollIntoView(false);
         }
         return message;
     }
@@ -407,6 +493,8 @@
         chatInputForm.on('keydown', function (event) {
             if (event.keyCode === 13 && event.ctrlKey) {
                 sendMessage($(this));
+                chatTextArea.style.height = 0;
+                chatTextArea.style.height = (chatTextArea.scrollHeight) + "px";
             }
         });
         chatInputForm.on('submit', function () {
@@ -432,7 +520,8 @@
                         "updated": false,
                         "headTime": 0,
                         "headChatOwner": 0,
-                        "tailChatOwner": 0
+                        "tailChatOwner": 0,
+                        "olderMessages": true
                     };
                 }
                 if (!(chatWindowStatus[partner_key].updated)) {
@@ -445,11 +534,16 @@
                             if (recent_messages.length) {
                                 chatWindowStatus[partner_key].updated = true;
                                 chatWindowStatus[partner_key].headTime = recent_messages[0].created_at;
-                                chatWindowStatus[partner_key].headChatOwner = recent_messages[0].sender_id;
+                                chatWindowStatus[partner_key].headChatOwner = (recent_messages[0].sender_id == {{Auth::id()}} ? 0 : recent_messages[0].sender_id);
                                 $.each(recent_messages, function (key, value) {
                                     showMessage(value);
                                 });
                             }
+                            if (recent_messages.length < 10) {
+                                chatWindowStatus[partner_key].olderMessages = false;
+                            }
+                            $('.message', `#${partner_key}`).last()[0].scrollIntoView(false);
+                            observer.observe($(`#${partner_key}`).find('.message')[0]);
                         }
                     })
                 }
