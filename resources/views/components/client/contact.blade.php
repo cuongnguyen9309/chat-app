@@ -40,7 +40,7 @@
                 </div>
             @endif
             <div
-                class="{{$contactType === 'user' && $contact->status==='offline' ? '' : 'text-green-500'}} status-{{$contactType.'-'.$contact->id}}">{!!$contact->name!!}</div>
+                class="{{property_exists($contact,'status') ? ($contact->status === 'offline' ? '' : 'text-green-500') : ''}} status-{{$contactType.'-'.$contact->id}}">{!!$contact->name!!}</div>
             @if(!$isSearch)
                 <p class="last-content text-gray-400">{{$contactType === 'user'
                                                     ? ($contact->last_message_is_received ? '' : (is_null($contact->last_message_is_received) ? '' :  'You: '))

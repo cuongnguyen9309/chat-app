@@ -26,10 +26,10 @@
                 <x-admin.table.td :odd="$loop->odd">
                     <span id="user-{{$user->id}}"
                           class="flex items-center {{$user->status === 'online' ? 'text-green-500' : ''}}"><div
-                            class="w-10 h-10 image-wrapper mr-3">
+                            class="w-[3rem] h-[3rem] min-w-[3rem] image-wrapper mr-3">
                             <img class="w-full h-full object-cover rounded-full" src="{{asset($user->image_url)}}"
                                  alt="">
-                        </div>{{Str::limit($user->name,25,'...')}}
+                        </div>{{Str::limit($user->name,20,'...')}}
                     </span>
                 </x-admin.table.td>
                 <x-admin.table.td :odd="$loop->odd">{{$user->email}}</x-admin.table.td>

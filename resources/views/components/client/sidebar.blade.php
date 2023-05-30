@@ -7,8 +7,8 @@
 'search_contacts_page','search_messages_page',
 'search_contacts_page_num','search_messages_page_num'
 ])
-<div id="user-info-sub-menu" class="user-info relative z-50 px-2 py-5">
-    <div class="user-image-wrapper relative">
+<div id="user-info-sub-menu" class="user-info relative z-50 py-5">
+    <div class="user-image-wrapper relative px-2">
         <div id="user-image"
              class=" w-10 h-10 flex items-center justify-center text-white cursor-pointer">
             <img class="w-full h-full object-cover rounded-full" src="{{$user->image_url}}" alt="">
@@ -20,11 +20,25 @@
             <a class="text-base" href="{{route('logout')}}">Sign out</a>
         </div>
     </div>
+    <div class="sidebar-tabs">
+        <button id="message-tab" class="h-12 w-full mt-4 flex">
+            <div class="w-[2px] bg-green-500 h-full"></div>
+            <div class="icon-wrapper flex w-full h-full items-center justify-center text-white">
+                <i class="fa-solid fa-message text-2xl"></i>
+            </div>
+        </button>
+    </div>
 </div>
 
 
 <div id="sidebar-contact-wrapper"
-     class="w-1/5 min-w-[20rem] content-stretch bg-gray-800 text-gray-50 shadow-xl shadow-gray-800 overflow-hidden relative">
+     class="lg:w-1/5
+      lg:min-w-[20rem] w-0
+      transform
+      transition-all
+      ease-out
+      duration-300
+      content-stretch bg-gray-800 text-gray-50 shadow-xl shadow-gray-800 overflow-hidden relative">
     <x-client.sidebar.header/>
     <div id="search-window" class="h-full w-full absolute z-10 bg-gray-800 origin-top scale-y-0 opacity-0 duration-300">
         <div class="search-results-filter-tab flex flex-row ml-5">

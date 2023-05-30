@@ -25,6 +25,7 @@
 {{--First load 10 messages with blade template. Listen for websocket event. Add new message to chat-window on event.
     If user scroll upwards, get chat-window partial, create another new 10 chat messages and return the html to client. On client use insertBefore to append.--}}
 <body class="bg-gray-900 w-full h-full ">
+    
 <div class="hidden" id="message-template">
     {{--    {{$reverse ? 'flex-row-reverse' : ''}}--}}
     <div class="message-block flex  mb-5">
@@ -658,6 +659,7 @@
             });
         Echo.private("chat.{{Auth::id()}}")
             .listen('FriendListUpdated', function (event) {
+                // friends_id = event.friends_id;
                 reloadContent('#contacts-user');
             })
             .listen('ReceivedFriendRequest', function (event) {
@@ -689,6 +691,15 @@
                 contact.find('.last-content').text(content);
                 showMessage(message);
             });
+        $('#message-tab').on('click',function(){
+            if(window.innerWidth >= 1024){
+                $('#sidebar-contact-wrapper').toggleClass('lg:w-1/5 lg:min-w-[20rem]');
+            }else{
+                $('#sidebar-contact-wrapper').removeClass('lg:w-1/5 lg:min-w-[20rem]');
+                $('#sidebar-contact-wrapper').toggleClass('w-0 w-[20rem]');
+            }
+            
+        })
         $('.toast-notif').on('click', function () {
             $(this).addClass('hidden');
         });

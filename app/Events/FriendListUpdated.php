@@ -2,6 +2,7 @@
 
 namespace App\Events;
 
+use App\Models\User;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -17,9 +18,11 @@ class FriendListUpdated implements ShouldBroadcast
     /**
      * Create a new event instance.
      */
+    public $friends_id = [];
     public function __construct(public $id)
     {
-        //
+        $user = User::find($id);
+        $this->friends_id = $user->friends->pluck('id');
     }
 
     /**
