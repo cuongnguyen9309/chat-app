@@ -30,7 +30,7 @@ class FriendListUpdated implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new Channel($this->id),
+            new PrivateChannel('chat.' . $this->id),
         ];
     }
 }

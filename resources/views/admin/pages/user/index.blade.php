@@ -24,7 +24,9 @@
             <x-admin.table.tr>
                 <x-admin.table.td :odd="$loop->odd">{{$user->id}}</x-admin.table.td>
                 <x-admin.table.td :odd="$loop->odd">
-                    <span class="flex items-center"><div class="w-10 h-10 image-wrapper mr-3">
+                    <span id="user-{{$user->id}}"
+                          class="flex items-center {{$user->status === 'online' ? 'text-green-500' : ''}}"><div
+                            class="w-10 h-10 image-wrapper mr-3">
                             <img class="w-full h-full object-cover rounded-full" src="{{asset($user->image_url)}}"
                                  alt="">
                         </div>{{Str::limit($user->name,25,'...')}}
@@ -50,4 +52,17 @@
     </x-admin.table.table>
     <div class="paginate flex justify-center mt-3">{{ $users->links() }}</div>
 
+@endsection
+@section('js-custom')
+    <script>
+        $(document).ready(function () {
+            Echo.join('chat')
+                .joining(function (user) {
+                    $(`#user-${user.id}`).addClass('text-green-500');
+                })
+                .leaving(function (user) {
+                    $(`#user-${user.id}`).removeClass('text-green-500');
+                })
+        })
+    </script>
 @endsection

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 /**
  * App\Models\Group
@@ -42,7 +43,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Group extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Searchable;
 
     protected $guarded = [];
 
@@ -73,5 +74,10 @@ class Group extends Model
     public function messages(): HasMany
     {
         return $this->hasMany(GroupMessage::class, 'receiver_id', 'id');
+    }
+
+    public function toSearchableArray()
+    {
+        return $this->only('id', 'name');
     }
 }

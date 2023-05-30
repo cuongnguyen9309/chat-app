@@ -13,11 +13,13 @@ class GroupMessageSeeder extends Seeder
      */
     public function run(): void
     {
-        GroupMessage::factory(50)->create();
+        GroupMessage::factory(500)->create();
         $groupMessages = GroupMessage::all();
         foreach ($groupMessages as $groupMessage) {
+            $sender_id = $groupMessage->sender->id;
             $user_ids = $groupMessage->receiver->users->pluck('id')->toArray();
             $groupMessage->unseen_users()->attach($user_ids);
+            $groupMessage->unseen_users()->detach($sender_id);
         }
     }
 }

@@ -10,14 +10,14 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ReceivedFriendRequest implements ShouldBroadcast
+class UserOffline implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(public $id)
+    public function __construct(public $user)
     {
         //
     }
@@ -30,7 +30,7 @@ class ReceivedFriendRequest implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('chat.' . $this->id),
+            new PresenceChannel('chat'),
         ];
     }
 }

@@ -14,6 +14,8 @@ return new class extends Migration {
             $table->id();
             $table->string('name')->nullable();
             $table->string('email')->unique();
+            $table->boolean('is_admin')->default(0);
+            $table->string('status')->default('offline');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->text('image_url')->default('images/avatars/default-avatar.png');

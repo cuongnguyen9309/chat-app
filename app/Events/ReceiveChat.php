@@ -23,12 +23,12 @@ class ReceiveChat implements ShouldBroadcast
     public function __construct(public $message, public $receiver_type, public $sender_name)
     {
         if ($receiver_type === 'user') {
-            ($this->channels)[] = new Channel($message->receiver_id);
+            ($this->channels)[] = new PrivateChannel('chat.' . $message->receiver_id);
         } else {
             $group = Group::find($message->receiver_id);
             $users_id = $group->users->pluck('id');
             foreach ($users_id as $user_id) {
-                ($this->channels)[] = new Channel($user_id);
+                ($this->channels)[] = new PrivateChannel('chat.' . $user_id);
             }
         }
     }
@@ -42,4 +42,6 @@ class ReceiveChat implements ShouldBroadcast
     {
         return $this->channels;
     }
+
+
 }

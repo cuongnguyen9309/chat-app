@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 /**
  * App\Models\GroupMessage
@@ -40,7 +41,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class GroupMessage extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Searchable;
 
     protected $fillable = ['content', 'sender_id', 'receiver_id'];
 
@@ -57,5 +58,10 @@ class GroupMessage extends Model
     public function unseen_users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_message_user_unseen', 'group_message_id', 'user_id')->withTimestamps();
+    }
+
+    public function toSearchableArray()
+    {
+        return $this->only('id', 'content');
     }
 }

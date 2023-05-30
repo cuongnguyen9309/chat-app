@@ -11,6 +11,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MessageController as ClientMessageController;
 use App\Http\Controllers\Admin\MessageController;
 use App\Http\Controllers\SignUpController;
+use App\Http\Middleware\IsAdmin;
 use Illuminate\Support\Facades\Route;
 use \App\Http\Controllers\UserController as ClientUserController;
 
@@ -24,29 +25,44 @@ use \App\Http\Controllers\UserController as ClientUserController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+Route::post('/pusher/presence', [ChatController::class, 'userStatus'])->name('user.observe');
 
 Route::get('/', [ChatController::class, 'index'])->name('chat.index')->middleware('auth');
 Route::get('/home', [ChatController::class, 'index'])->name('home')->middleware('auth');
 Route::get('chat/', [ChatController::class, 'index'])->name('chat.index')->middleware('auth');
 Route::get('chat/recent/{type?}/{id?}', [ChatController::class, 'recent'])->name('chat.recent')->middleware('auth');
 Route::post('chat/send', [ChatController::class, 'sendChat'])->name('chat.send')->middleware('auth');
+Route::post('/search', [ChatController::class, 'search'])->name('search');
+
+
 Route::get('/login', [LoginController::class, 'index'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'attempt'])->name('login.attempt')->middleware('guest');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
 Route::get('/signup', [SignUpController::class, 'index'])->name('signup')->middleware('guest');
 Route::post('/signup', [SignUpController::class, 'store'])->name('signup.store')->middleware('guest');
-Route::get('/user/{id?}', [ClientUserController::class, 'getUser'])->name('user.info');
-Route::get('/user/add-friend/{id?}', [ClientUserController::class, 'addFriend'])->name('friend.add');
-Route::get('/user/accept-friend/{id?}', [ClientUserController::class, 'acceptFriend'])->name('friend.accept');
-Route::get('/user/remove-friend/{id?}', [ClientUserController::class, 'removeFriend'])->name('friend.remove');
-Route::post('/user/message/retrieve', [ClientUserController::class, 'retrieveMessage'])->name('user.message.retrieve');
 
-Route::post('/group', [ClientGroupController::class, 'store'])->name('group.store');
-Route::get('/group/accept/{id?}', [ClientGroupController::class, 'acceptGroup'])->name('group.accept');
-Route::get('/group/leave/{id?}', [ClientGroupController::class, 'leaveGroup'])->name('group.leave');
-Route::get('/group/{id?}', [ClientGroupController::class, 'getGroup'])->name('group.info');
+Route::middleware('auth')->group(function () {
 
-Route::group(['prefix' => 'admin', 'as' => 'admin.'], function () {
+    Route::get('/user/{id?}', [ClientUserController::class, 'getUser'])->name('user.info');
+    Route::post('/user/update', [ClientUserController::class, 'updateUser'])->name('user.update');
+    Route::get('/user/add-friend/{id?}', [ClientUserController::class, 'addFriend'])->name('friend.add');
+    Route::get('/user/accept-friend/{id?}', [ClientUserController::class, 'acceptFriend'])->name('friend.accept');
+    Route::get('/user/remove-friend/{id?}', [ClientUserController::class, 'removeFriend'])->name('friend.remove');
+    Route::post('/user/message/retrieve', [ClientUserController::class, 'retrieveMessage'])->name('user.message.retrieve');
+    Route::post('/user/message/read', [ClientUserController::class, 'readMessage'])->name('user.message.read');
+    Route::get('/user/online/{id?}', [ClientUserController::class, 'userOnline'])->name('user.online');
+    Route::get('/user/offline/{id?}', [ClientUserController::class, 'userOffline'])->name('user.offline');
+
+
+    Route::post('/group', [ClientGroupController::class, 'store'])->name('group.store');
+    Route::get('/group/accept/{id?}', [ClientGroupController::class, 'acceptGroup'])->name('group.accept');
+    Route::get('/group/leave/{id?}', [ClientGroupController::class, 'leaveGroup'])->name('group.leave');
+    Route::get('/group/{id?}', [ClientGroupController::class, 'getGroup'])->name('group.info');
+});
+
+
+Route::middleware([IsAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::resource('user', UserController::class);
     Route::post('/user/add-friend', [UserController::class, 'addFriend'])->name('friend.add');

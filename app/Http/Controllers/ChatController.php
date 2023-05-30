@@ -3,22 +3,37 @@
 namespace App\Http\Controllers;
 
 use App\Events\ReceiveChat;
+use App\Events\TestEvent;
 use App\Models\Group;
 use App\Models\GroupMessage;
 use App\Models\Message;
 use App\Models\User;
-use Exception;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ChatController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $user = User::findOrFail(Auth::id());
+        $messages_sent = DB::table('messages')
+            ->where('sender_id', Auth::id())
+            ->select('id', 'content', 'created_at', 'receiver_id as user_id', DB::raw("'0' is_received"));
+        $message_receive = DB::table('messages')
+            ->where('receiver_id', Auth::id())
+            ->select('id', 'content', 'created_at', 'sender_id as user_id', DB::raw("'1' is_received"));
+        $messages_union = DB::query()
+            ->fromSub($messages_sent->union($message_receive), 'messages');
+        $messages = DB::query()
+            ->from($messages_union, 'max')
+            ->leftJoinSub($messages_union, 'bigger', function (JoinClause $join) {
+                $join->on('max.user_id', '=', 'bigger.user_id')->on('max.id', '<', 'bigger.id');
+            })->select('max.*')->whereNull('bigger.user_id');
+
         $friends = DB::table('users')
             ->join('friendship', 'friendship.friend_id', '=', 'users.id')
             ->leftJoinSub(DB::table('messages')
@@ -28,24 +43,18 @@ class ChatController extends Controller
                 ->groupBy('sender_id'), 'messages', function (JoinClause $join) {
                 $join->on('messages.sender_id', '=', 'users.id');
             })
-            ->leftJoinSub(DB::table('messages as max')
-                ->where('max.receiver_id', Auth::id())
-                ->leftJoin('messages as bigger', function (JoinClause $join) {
-                    $join->on('max.sender_id', '=', 'bigger.sender_id')->on('max.id', '<', 'bigger.id');
-                })
-                ->select('max.*')
-                ->whereNull('bigger.id'),
+            ->leftJoinSub($messages,
                 'last_message',
                 function (JoinClause $join) {
-                    $join->on('users.id', '=', 'last_message.sender_id');
+                    $join->on('users.id', '=', 'last_message.user_id');
                 })
             ->where('friendship.user_id', Auth::id())
-            ->select('users.*', 'messages.unread_num', 'last_message.content as last_content', 'last_message.created_at as last_sent')
+            ->select('users.*', 'messages.unread_num', 'last_message.content as last_content', 'last_message.created_at as last_sent', 'last_message.is_received as last_message_is_received')
             ->orderBy('last_sent', 'DESC')
             ->get();
         $joined_groups = DB::table('groups')
             ->join('group_user', 'groups.id', '=', 'group_user.group_id')
-            ->joinSub(DB::table('group_message_user_unseen')
+            ->leftJoinSub(DB::table('group_message_user_unseen')
                 ->join('group_messages', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
                 ->where('group_message_user_unseen.user_id', Auth::id())
                 ->groupBy('group_messages.receiver_id')
@@ -54,23 +63,82 @@ class ChatController extends Controller
                 function (JoinClause $join) {
                     $join->on('unseen_message.receiver_id', '=', 'groups.id');
                 })
-            ->joinSub(DB::table('group_messages as max')
+            ->leftJoinSub(DB::table('group_messages as max')
                 ->leftJoin('group_messages as bigger', function (JoinClause $join) {
                     $join->on('max.receiver_id', '=', 'bigger.receiver_id')->on('max.id', '<', 'bigger.id');
                 })
+                ->join('users', 'max.sender_id', '=', 'users.id')
                 ->whereNull('bigger.id')
-                ->select('max.*')
+                ->select('max.*', 'users.name as sender_name')
                 , 'last_message', function (JoinClause $join) {
                     $join->on('last_message.receiver_id', '=', 'groups.id');
                 })
             ->where('group_user.user_id', Auth::id())
-            ->select('groups.*', 'unseen_message.unread_num', 'last_message.created_at as last_sent', 'last_message.content as last_content')
+            ->select('groups.*', 'unseen_message.unread_num', 'last_message.created_at as last_sent', 'last_message.content as last_content',
+                'last_message.sender_id as last_message_sender_id', 'last_message.sender_name as last_message_sender_name')
             ->orderBy('last_sent', 'DESC')
             ->get();
-//        dd($friends);
         $friendRequests = $user->isRequestingToBeFriend;
         $groupRequests = $user->pending_groups;
-        return view('client.pages.chat', compact('friends', 'joined_groups', 'friendRequests', 'groupRequests'));
+
+
+        $input = $request->get('search') ?? null;
+        if (!is_null($input)) {
+            $search_contacts = DB::query()
+                ->fromSub(DB::table('users')
+                    ->join('friendship', 'friendship.friend_id', '=', 'users.id')
+                    ->where('friendship.user_id', Auth::id())
+                    ->select('id', 'name', 'image_url', DB::raw("'user' type"))
+                    ->union(DB::table('groups')
+                        ->join('group_user', 'groups.id', '=', 'group_user.group_id')
+                        ->where('group_user.user_id', Auth::id())
+                        ->select('id', 'name', 'image_url', DB::raw("'group' type"))), 'contacts')
+                ->where('name', 'like', '%' . $input . '%')->paginate(8, ['*'], 'search-contacts');
+            $search_contacts_page_num = $search_contacts->lastPage();
+            $search_contacts = $this->toCollection($search_contacts);
+            $search_contacts_page = $request->get('search-contacts') ?? 1;
+
+            $search_messages = DB::query()
+                ->fromSub(
+                    DB::query()->fromSub(
+                        DB::table('messages')
+                            ->join('users as senders', 'senders.id', '=', 'messages.sender_id')
+                            ->join('users as receivers', 'receivers.id', '=', 'messages.receiver_id')
+                            ->where('messages.sender_id', Auth::id())
+                            ->select('messages.id as message_id', 'messages.created_at', 'messages.content', 'messages.receiver_id as id', 'receivers.name as name', 'receivers.image_url as image_url')
+                            ->union(DB::table('messages')
+                                ->join('users as senders', 'senders.id', '=', 'messages.sender_id')
+                                ->join('users as receivers', 'receivers.id', '=', 'messages.receiver_id')
+                                ->where('messages.receiver_id', Auth::id())
+                                ->select('messages.id as message_id', 'messages.created_at', 'messages.content', 'messages.sender_id as id', 'senders.name as name', 'senders.image_url as image_url'))
+                        , 'messages')
+                        ->select('messages.*', DB::raw("'user' type"))
+                        ->union(DB::table('group_messages as messages')
+                            ->join('users as senders', 'senders.id', '=', 'messages.sender_id')
+                            ->joinSub(DB::table('groups')
+                                ->join('group_user', 'groups.id', '=', 'group_user.group_id')
+                                ->where('group_user.user_id', Auth::id())->select('groups.*'), 'receivers', function (JoinClause $join) {
+                                $join->on('receivers.id', '=', 'messages.receiver_id');
+                            })
+                            ->select('messages.id as message_id', 'messages.created_at', 'messages.content', 'messages.receiver_id as id', 'receivers.name as name', 'receivers.image_url as image_url', DB::raw("'group' type")))
+                    , 'contacts')
+                ->where('content', 'like', '%' . $input . '%')->paginate(5, ['*'], 'search-messages');
+            $search_messages_page_num = $search_messages->lastPage();
+            $search_messages = $this->toCollection($search_messages);
+            $search_messages_page = $request->get('search-messages') ?? 1;
+
+        } else {
+            $search_contacts = null;
+            $search_messages = null;
+            $search_contacts_page = 0;
+            $search_contacts_page_num = 0;
+            $search_messages_page = 0;
+            $search_messages_page_num = 0;
+        }
+        return view('client.pages.chat', compact('friends', 'joined_groups', 'friendRequests', 'groupRequests',
+            'search_contacts', 'search_contacts_page', 'search_contacts_page_num',
+            'search_messages', 'search_messages_page', 'search_messages_page_num',
+            'input', 'user'));
     }
 
     public function recent($type, $id)
@@ -102,7 +170,9 @@ class ChatController extends Controller
                 $messages = DB::table('group_messages')
                     ->join('users as senders', 'group_messages.sender_id', '=', 'senders.id')
                     ->join('groups as receivers', 'group_messages.receiver_id', '=', 'receivers.id')
+                    ->leftJoin('group_message_user_unseen', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
                     ->select('group_messages.*',
+                        'group_message_user_unseen.created_at as unseen',
                         'senders.name as sender_name',
                         'senders.image_url as sender_image_url',
                         'receivers.name as receiver_name',
@@ -150,5 +220,31 @@ class ChatController extends Controller
         broadcast(new ReceiveChat($message, $request['receiver_type'], $message->sender->name))->toOthers();
         return response()->json(['message' => $message]);
 
+    }
+
+
+    public function toCollection($collection)
+    {
+        return $collection->map(function ($row) {
+            return $row;
+        });
+    }
+
+    public function userStatus(Request $request)
+    {
+        $events = $request->events;
+        foreach ($events as $event) {
+            if ($event['name'] === 'member_removed') {
+                $user = User::find($event['user_id']);
+                $user->status = 'offline';
+                $user->save();
+            } elseif ($event['name'] === 'member_added') {
+                error_log('member_added');
+                $user = User::find($event['user_id']);
+                $user->status = 'online';
+                $user->save();
+            }
+        }
+        return response()->json('ok');
     }
 }

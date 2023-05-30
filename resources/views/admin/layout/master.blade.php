@@ -7,6 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}"/>
     @vite('resources/css/app.css')
+    @vite('resources/js/bootstrap.js')
     <script src="{{asset('js/jquery-3.7.0.min.js')}}"></script>
     <script src="https://kit.fontawesome.com/c2fe055d35.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="{{asset('css/main.css')}}">

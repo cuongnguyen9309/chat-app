@@ -13,6 +13,6 @@ class MessageSeeder extends Seeder
      */
     public function run(): void
     {
-        Message::factory(50)->create();
+        Message::factory(200)->create();
     }
 }
