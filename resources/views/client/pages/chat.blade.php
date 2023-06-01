@@ -733,10 +733,15 @@
         Echo.private("chat.{{Auth::id()}}")
             .listen('FriendListUpdated', function (event) {
                 friends_id = event.friends_id;
+                if(event.event === 'acceptFriend'){
+                    showToastNotif(`You are now friend with ${event.friend.name}`);
+                }
                 reloadContent('#contacts-user');
             })
             .listen('ReceivedFriendRequest', function (event) {
                 reloadContent('#friend-requests');
+                let user = event.user;
+                showToastNotif(`You got a friend request from ${user.name}`);
             })
             .listen('ReceivedGroupRequest', function (event) {
                 reloadContent('#group-requests');

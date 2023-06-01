@@ -19,8 +19,10 @@ class FriendListUpdated implements ShouldBroadcast
      * Create a new event instance.
      */
     public $friends_id = [];
-    public function __construct(public $id)
+    public $friend = null;
+    public function __construct(public $id,public string $event,$user = null)
     {
+        $this->friend = $user;
         $user = User::find($id);
         $this->friends_id = $user->friends->pluck('id');
     }

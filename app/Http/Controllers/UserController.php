@@ -62,7 +62,7 @@ class UserController extends Controller
         $friend = User::find($id);
         $user = User::find(Auth::id());
         $user->inRequestFriends()->attach($id, ['status' => 'pending']);
-        broadcast(new ReceivedFriendRequest($id))->toOthers();
+        broadcast(new ReceivedFriendRequest($id,$user))->toOthers();
         return response()->json(compact('friend'));
     }
 
@@ -79,7 +79,8 @@ class UserController extends Controller
                     ->update(['status' => 'accepted', 'updated_at' => Carbon::now()->format('Y-m-d H:i:s')]);
                 $user->friends()->attach($id, ['status' => 'accepted']);
             });
-            broadcast(new FriendListUpdated($id))->toOthers();
+            $event = 'acceptFriend';
+            broadcast(new FriendListUpdated($id,$event,$user))->toOthers();
             return response()->json(['friend' => $friend]);
         } else {
             abort(404);
@@ -88,9 +89,10 @@ class UserController extends Controller
 
     public function removeFriend($id)
     {
+        $event = 'removeFriend';
         User::findOrFail($id)->friends()->detach(Auth::id());
         User::findOrFail(Auth::id())->friends()->detach($id);
-        broadcast(new FriendListUpdated($id))->toOthers();
+        broadcast(new FriendListUpdated($id,$event))->toOthers();
         return response()->json(['message' => 'success']);
     }
 
