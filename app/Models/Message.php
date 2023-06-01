@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 
@@ -57,5 +59,10 @@ class Message extends Model
     public function toSearchableArray()
     {
         return $this->only('id', 'content');
+    }
+
+    public function attachment(): MorphOne
+    {
+        return $this->morphOne(Attachment::class, 'attachmentable');
     }
 }

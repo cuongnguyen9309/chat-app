@@ -18,10 +18,12 @@ class GroupMessageFactory extends Factory
      */
     public function definition(): array
     {
+        $receiver_id = Group::all()->random();
+        $sender_id = $receiver_id->users->random();
         return [
             'content' => fake()->paragraph(rand(3, 7)),
-            'sender_id' => User::all()->random(),
-            'receiver_id' => Group::all()->random()
+            'receiver_id' => $receiver_id,
+            'sender_id' => $sender_id
         ];
     }
 }

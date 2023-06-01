@@ -14,7 +14,7 @@ class FriendSeeder extends Seeder
     public function run(): void
     {
         foreach (User::all() as $user) {
-            $friends = User::all()->random(rand(0, 4));
+            $friends = User::all()->random(rand(1, 4));
             $friends = $friends->reject(function ($item) use ($user) {
                 return $item->id === $user->id;
             });

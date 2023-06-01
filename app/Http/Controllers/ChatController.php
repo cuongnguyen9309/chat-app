@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Events\ReceiveChat;
 use App\Events\TestEvent;
+use App\Models\Attachment;
+use App\Models\FileType;
 use App\Models\Group;
 use App\Models\GroupMessage;
 use App\Models\Message;
@@ -84,6 +86,8 @@ class ChatController extends Controller
 
         $input = $request->get('search') ?? null;
         if (!is_null($input)) {
+            $input = trim($input);
+//            $input = preg_replace('/\s/', '%', $input);
             $search_contacts = DB::query()
                 ->fromSub(DB::table('users')
                     ->join('friendship', 'friendship.friend_id', '=', 'users.id')
@@ -105,12 +109,14 @@ class ChatController extends Controller
                             ->join('users as senders', 'senders.id', '=', 'messages.sender_id')
                             ->join('users as receivers', 'receivers.id', '=', 'messages.receiver_id')
                             ->where('messages.sender_id', Auth::id())
-                            ->select('messages.id as message_id', 'messages.created_at', 'messages.content', 'messages.receiver_id as id', 'receivers.name as name', 'receivers.image_url as image_url')
+                            ->select('messages.id as message_id', 'messages.created_at', 'messages.content',
+                                'messages.receiver_id as id', 'receivers.name as name', 'receivers.image_url as image_url')
                             ->union(DB::table('messages')
                                 ->join('users as senders', 'senders.id', '=', 'messages.sender_id')
                                 ->join('users as receivers', 'receivers.id', '=', 'messages.receiver_id')
                                 ->where('messages.receiver_id', Auth::id())
-                                ->select('messages.id as message_id', 'messages.created_at', 'messages.content', 'messages.sender_id as id', 'senders.name as name', 'senders.image_url as image_url'))
+                                ->select('messages.id as message_id', 'messages.created_at',
+                                    'messages.content', 'messages.sender_id as id', 'senders.name as name', 'senders.image_url as image_url'))
                         , 'messages')
                         ->select('messages.*', DB::raw("'user' type"))
                         ->union(DB::table('group_messages as messages')
@@ -120,7 +126,8 @@ class ChatController extends Controller
                                 ->where('group_user.user_id', Auth::id())->select('groups.*'), 'receivers', function (JoinClause $join) {
                                 $join->on('receivers.id', '=', 'messages.receiver_id');
                             })
-                            ->select('messages.id as message_id', 'messages.created_at', 'messages.content', 'messages.receiver_id as id', 'receivers.name as name', 'receivers.image_url as image_url', DB::raw("'group' type")))
+                            ->select('messages.id as message_id', 'messages.created_at', 'messages.content',
+                                'messages.receiver_id as id', 'receivers.name as name', 'receivers.image_url as image_url', DB::raw("'group' type")))
                     , 'contacts')
                 ->where('content', 'like', '%' . $input . '%')->paginate(5, ['*'], 'search-messages');
             $search_messages_page_num = $search_messages->lastPage();
@@ -135,6 +142,7 @@ class ChatController extends Controller
             $search_messages_page = 0;
             $search_messages_page_num = 0;
         }
+//        dd($search_messages);
         return view('client.pages.chat', compact('friends', 'joined_groups', 'friendRequests', 'groupRequests',
             'search_contacts', 'search_contacts_page', 'search_contacts_page_num',
             'search_messages', 'search_messages_page', 'search_messages_page_num',
@@ -194,19 +202,18 @@ class ChatController extends Controller
 
     public function sendChat(Request $request)
     {
-        $request = $request->all();
-
+        $builder = new \AshAllenDesign\ShortURL\Classes\Builder();
         switch ($request['receiver_type']) {
             case 'user':
                 $message = Message::create([
-                    'content' => $request['input'],
+                    'content' => $request->get('content'),
                     'sender_id' => Auth::id(),
                     'receiver_id' => $request['receiver_id']
                 ]);
                 break;
             case 'group':
                 $message = GroupMessage::create([
-                    'content' => $request['input'],
+                    'content' => $request->get('content'),
                     'sender_id' => Auth::id(),
                     'receiver_id' => $request['receiver_id']
                 ]);
@@ -217,8 +224,23 @@ class ChatController extends Controller
             default:
                 abort(404);
         }
+        if ($request->file('attachment')) {
+            $attachment = $message->attachment()->create([
+                'name' => $request->file('attachment')->getClientOriginalName(),
+                'file_type_id' => DB::table('file_types')
+                    ->join('file_type_extension', 'file_type_extension.file_type_id', '=', 'file_types.id')
+                    ->select('file_types.id as id', 'file_type_extension.name as name')
+                    ->where('file_type_extension.name', $request->file('attachment')->getClientOriginalExtension())
+                    ->first()->id,
+                'file_size' => $request->file('attachment')->getSize()
+            ]);
+            $shortURLObject = $builder->destinationUrl(route('attachment.download', $attachment->id))->make();
+            $shortURL = $shortURLObject->default_short_url;
+            $attachment->short_url = $shortURL;
+            $attachment->save();
+        }
         broadcast(new ReceiveChat($message, $request['receiver_type'], $message->sender->name))->toOthers();
-        return response()->json(['message' => $message]);
+        return response()->json(['message' => $message, 'attachment' => $attachment]);
 
     }
 

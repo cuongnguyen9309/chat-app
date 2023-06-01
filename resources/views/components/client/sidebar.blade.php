@@ -82,7 +82,9 @@
             <div id="search-message-reload" data-search="{{$search}}" data-page="{{$search_messages_page}}">
                 @if($search_messages)
                     @forelse($search_messages as $search_message)
-                        <div class="flex flex-row hover:cursor-pointer py-5 px-5  hover:bg-gray-900 duration-150">
+                        <div data-messageid="{{$search_message->message_id}}" data-contactid="{{$search_message->id}}"
+                             data-type="{{$search_message->type}}"
+                             class="search-message-result flex flex-row hover:cursor-pointer py-5 px-5  hover:bg-gray-900 duration-150">
                             <div class="user-image w-14 h-14 flex items-center relative justify-center ">
                                 <img class="rounded-full w-full h-full"
                                      src="{{asset($search_message->image_url ?? 'images/avatars/default-avatar.png')}}"

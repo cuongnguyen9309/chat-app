@@ -18,7 +18,10 @@ class DatabaseSeeder extends Seeder
             UserGroupSeeder::class,
             FriendSeeder::class,
             MessageSeeder::class,
-            GroupMessageSeeder::class
+            GroupMessageSeeder::class,
+            ChatAutocompletesSedder::class,
+            FileTypesSeeder::class,
+            FileTypeExtensionSeeder::class
         ]);
     }
 }

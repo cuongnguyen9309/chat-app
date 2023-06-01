@@ -118,7 +118,7 @@ class UserController extends Controller
                                 $query->where('messages.sender_id', $request->get('partner_id'))->where('messages.receiver_id', Auth::id());
                             });
                     })
-                    ->where('messages.id', '<', $request->get('headTime'))
+                    ->where('messages.id', '<', $request->get('headId'))
                     ->orderBy('messages.id', 'DESC')
                     ->limit(10)
                     ->get();;
@@ -137,7 +137,7 @@ class UserController extends Controller
                         DB::raw("'group' as receiver_type")
                     )
                     ->where('group_messages.receiver_id', $request->get('partner_id'))
-                    ->where('group_messages.id', '<', $request->get('headTime'))
+                    ->where('group_messages.id', '<', $request->get('headId'))
                     ->orderBy('group_messages.id', 'DESC')
                     ->limit(10)
                     ->get();
@@ -145,7 +145,7 @@ class UserController extends Controller
             default:
                 abort(404);
         }
-        return response()->json(['messages' => $messages, 'id' => $request->get('headTime')]);
+        return response()->json(['messages' => $messages, 'id' => $request->get('headId')]);
     }
 
     public function readMessage(Request $request)
@@ -194,5 +194,64 @@ class UserController extends Controller
 
         broadcast(new UserOffline($user));
         return response()->json(['message' => 'success']);
+    }
+
+    public function searchMessage($type, $id, $from, $to)
+    {
+        switch ($type) {
+            case 'user':
+                $messages = DB::table('messages')
+                    ->join('users as senders', 'messages.sender_id', '=', 'senders.id')
+                    ->join('users as receivers', 'messages.receiver_id', '=', 'receivers.id')
+                    ->select('messages.*',
+                        'senders.name as sender_name',
+                        'senders.image_url as sender_image_url',
+                        'receivers.name as receiver_name',
+                        'receivers.image_url as receivers_image_url',
+                        DB::raw("'user' as receiver_type")
+                    )
+                    ->where(function ($query) use ($id, $from, $to) {
+                        $query
+                            ->where(function ($query) use ($id, $from, $to) {
+                                $query->where('messages.sender_id', Auth::id())->where('messages.receiver_id', $id);
+                            })
+                            ->orWhere(function ($query) use ($id, $from, $to) {
+                                $query->where('messages.sender_id', $id)->where('messages.receiver_id', Auth::id());
+                            });
+                    })
+                    ->where('messages.id', '>', $from);
+                if ($to != 0) {
+                    $messages->where('messages.id', '<', $to);
+                }
+                $messages = $messages
+                    ->orderBy('messages.id', 'DESC')
+                    ->get();
+                break;
+            case 'group':
+                $messages = DB::table('group_messages')
+                    ->join('users as senders', 'group_messages.sender_id', '=', 'senders.id')
+                    ->join('groups as receivers', 'group_messages.receiver_id', '=', 'receivers.id')
+                    ->leftJoin('group_message_user_unseen', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
+                    ->select('group_messages.*',
+                        'group_message_user_unseen.created_at as unseen',
+                        'senders.name as sender_name',
+                        'senders.image_url as sender_image_url',
+                        'receivers.name as receiver_name',
+                        'receivers.image_url as receiver_image_url',
+                        DB::raw("'group' as receiver_type")
+                    )
+                    ->where('group_messages.receiver_id', $id)
+                    ->where('group_messages.id', '>', $from);
+                if ($to != 0) {
+                    $messages->where('group_messages.id', '<', $to);
+                }
+                $messages = $messages
+                    ->orderBy('group_messages.id', 'DESC')
+                    ->get();
+                break;
+            default:
+                abort(404);
+        }
+        return response()->json(['messages' => $messages]);
     }
 }

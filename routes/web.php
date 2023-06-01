@@ -4,6 +4,9 @@
 use App\Http\Controllers\Admin\HomeController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\GroupController;
+use App\Http\Controllers\AttachmentController;
+use App\Http\Controllers\AutocompleteController;
+use App\Http\Controllers\ChatAutocompleteController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\GroupController as ClientGroupController;
 use App\Http\Controllers\GroupMessageController;
@@ -33,7 +36,8 @@ Route::get('chat/', [ChatController::class, 'index'])->name('chat.index')->middl
 Route::get('chat/recent/{type?}/{id?}', [ChatController::class, 'recent'])->name('chat.recent')->middleware('auth');
 Route::post('chat/send', [ChatController::class, 'sendChat'])->name('chat.send')->middleware('auth');
 Route::post('/search', [ChatController::class, 'search'])->name('search');
-
+Route::get('/autocomplete/chat', [ChatAutocompleteController::class, 'autocomplete'])->name('chat.autocomplete');
+Route::get('/attachment/download/{id}', [AttachmentController::class, 'download'])->name('attachment.download');
 
 Route::get('/login', [LoginController::class, 'index'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'attempt'])->name('login.attempt')->middleware('guest');
@@ -51,6 +55,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/remove-friend/{id?}', [ClientUserController::class, 'removeFriend'])->name('friend.remove');
     Route::post('/user/message/retrieve', [ClientUserController::class, 'retrieveMessage'])->name('user.message.retrieve');
     Route::post('/user/message/read', [ClientUserController::class, 'readMessage'])->name('user.message.read');
+    Route::get('/user/message/search/{type?}/{id?}/{from?}/{to?}', [ClientUserController::class, 'searchMessage'])->name('user.message.search');
     Route::get('/user/online/{id?}', [ClientUserController::class, 'userOnline'])->name('user.online');
     Route::get('/user/offline/{id?}', [ClientUserController::class, 'userOffline'])->name('user.offline');
 

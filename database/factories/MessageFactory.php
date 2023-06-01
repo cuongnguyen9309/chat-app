@@ -17,10 +17,12 @@ class MessageFactory extends Factory
      */
     public function definition(): array
     {
+        $sender_id = User::all()->random();
+        $receiver_id = $sender_id->friends->random();
         return [
             'content' => fake()->paragraph(rand(3, 7)),
-            'sender_id' => User::all()->random(),
-            'receiver_id' => User::all()->random()
+            'sender_id' => $sender_id,
+            'receiver_id' => $receiver_id
         ];
     }
 }

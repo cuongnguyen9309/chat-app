@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 
@@ -58,6 +59,11 @@ class GroupMessage extends Model
     public function unseen_users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'group_message_user_unseen', 'group_message_id', 'user_id')->withTimestamps();
+    }
+
+    public function attachment(): MorphOne
+    {
+        return $this->morphOne(Attachment::class, 'attachmentable');
     }
 
     public function toSearchableArray()

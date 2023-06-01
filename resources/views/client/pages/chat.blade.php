@@ -14,9 +14,44 @@
             background-color: lightgreen;
             font-style: normal;
         }
+
+        .ui-autocomplete {
+            visibility: hidden;
+            position: absolute;
+            z-index: 9999;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Autocomplete dropdown list item */
+        .ui-autocomplete li {
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        /* Autocomplete dropdown list item hover state */
+        .ui-autocomplete li.ui-state-hover {
+            background-color: #f2f2f2;
+        }
+
+        /* Autocomplete dropdown list item active state */
+        .ui-autocomplete li .ui-menu-item-wrapper.ui-state-active {
+            background-color: cornflowerblue;
+            color: white;
+        }
+
+
     </style>
     <script src="https://kit.fontawesome.com/c2fe055d35.js" crossorigin="anonymous"></script>
     <script src="{{asset('js/jquery-3.7.0.min.js')}}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"
+            integrity="sha512-57oZ/vW8ANMjR/KQ6Be9v/+/h6bq9/l3f0Oc7vn6qMqyhvPd1cvKBRWWpzu0QoneImqr2SkmO4MSqU+RpHom3Q=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-autocomplete/1.0.7/jquery.auto-complete.min.js"
+            integrity="sha512-TToQDr91fBeG4RE5RjMl/tqNAo35hSRR4cbIFasiV2AAMQ6yKXXYhdSdEpUcRE6bqsTiB+FPLPls4ZAFMoK5WA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     @vite('resources/css/app.css')
     @vite('resources/js/bootstrap.js')
     <link rel="stylesheet" href="{{asset('css/main.css')}}">
@@ -25,7 +60,6 @@
 {{--First load 10 messages with blade template. Listen for websocket event. Add new message to chat-window on event.
     If user scroll upwards, get chat-window partial, create another new 10 chat messages and return the html to client. On client use insertBefore to append.--}}
 <body class="bg-gray-900 w-full h-full ">
-    
 <div class="hidden" id="message-template">
     {{--    {{$reverse ? 'flex-row-reverse' : ''}}--}}
     <div class="message-block flex  mb-5">
@@ -40,11 +74,27 @@
     </div>
 
     {{--    Add rounded-mr if reverse, rounded-ml if not--}}
-    <div class="message text-black max-w-7xl my-4 bg-gray-200 py-3 px-2">
+    <div class="message text-black max-w-7xl my-4 bg-gray-200 py-3 px-2 duration-200 transition-colors">
     </div>
     {{--    UserInfo Tag. Append to new message when chat owner change--}}
     <p class="user-name leading-8 text-xs text-gray-500"></p>
     <p class="send-message-error text-red-600 text-xs">Message sending failed</p>
+
+    {{-- Attachment view --}}
+    <div class="message-attachment">
+        <div class="attachment-wrapper">
+            <div class="attachment flex mb-2">
+                <div class="attachment-thumbnail-wrapper">
+                    <img class="attachment-thumbnail" src="{{asset('/images/file_thumbnails/audio.png')}}" alt="">
+                </div>
+                <div class="attachment-info">
+                    <p class="attachment-name">Attachment name</p>
+                    <p class="attachment-size">10 MB</p>
+                </div>
+                <a class="download-link inline-block"><i class="fa-solid fa-download"></i></a>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="hidden" id="chat-window-content-template">
     <div class="hidden chat-window-content w-full h-full">
@@ -78,32 +128,40 @@
         <div id="chat-window" class="chat-window overflow-y-scroll p-5 flex-1">
 
         </div>
-
-
-        <form class="border-gray-200 px-4 pt-4 mb-2 sm:mb-3" id="chat-input-form">
+        <form class="border-gray-200 px-4 pt-4 mb-2 sm:mb-3" id="chat-input-form"
+              enctype="multipart/form-data"
+              action=""
+              method="POST"
+        >
             @csrf
+            <input type="file" id="attachment-input" class="hidden" name="attachment">
             <div
                 class="relative flex w-full bg-gray-200 rounded-md">
                 <textarea
                     id="chat-textarea"
+                    name="content"
                     placeholder="Enter your message"
                     class="w-full resize-none bg-gray-200 focus:outline-none focus:placeholder-gray-400 text-gray-600 rounded-md placeholder-gray-600 py-3 px-5"
                     rows="1"></textarea>
                 <div class=" items-center inset-y-0 flex">
                     <button
+                        type="button"
+                        id="upload-attachment-btn"
                         class="flex items-center justify-center rounded-full h-10 w-10 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none">
                         <i class="fa-solid fa-paperclip"></i>
                     </button>
                     <button
+                        type="button"
                         class="flex items-center justify-center rounded-full h-10 w-10 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none">
                         <i class="fa-solid fa-camera"></i>
                     </button>
                     <button
+                        type="button"
                         class="flex items-center justify-center rounded-full h-10 w-10 transition duration-500 ease-in-out text-gray-500 hover:bg-gray-300 focus:outline-none">
                         <i class="fa-regular fa-face-smile"></i>
                     </button>
                     <button type="submit"
-                            class="flex items-center justify-center rounded-2xl py-3 px-3 mr-2   transition duration-500 ease-in-out text-white bg-green-400 hover:bg-blue-400 focus:outline-none">
+                            class="flex items-center justify-center rounded-2xl py-3 px-3 mr-2 transition duration-500 ease-in-out text-white bg-green-400 hover:bg-blue-400 focus:outline-none">
                         <i class="fa-regular fa-paper-plane"></i>
                     </button>
                 </div>
@@ -273,10 +331,12 @@
     let chatWindowStatus = [];
     let timerId = undefined;
     let readMessages = [];
+    let chatInput = '';
     // HTML element reuse
     const sidebarContactWrapper = $('#sidebar-contact-wrapper');
     const chatInputForm = $('#chat-input-form');
     const chatTextArea = document.querySelector('#chat-textarea');
+    const chatTextAreaJquery = $('#chat-textarea');
     const editUserInfo = $('#edit-user-info');
 
     /* Throttle Function */
@@ -302,49 +362,13 @@
                     url: "{{route('user.message.retrieve')}}",
                     type: "POST",
                     data: {
-                        headTime: chatWindowStatus[currPartnerKey].headTime,
+                        headId: chatWindowStatus[currPartnerKey].headId,
                         partner_type,
                         partner_id
                     },
                     success: function (res) {
                         const messages = res.messages;
-                        const senders_id = messages.map(message => message.sender_id);
-                        if (messages.length < 10) {
-                            chatWindowStatus[partner_key].olderMessages = false;
-                        }
-                        messages.forEach((messageInfo, index) => {
-                            let message;
-                            let messageBlock;
-                            if (chatWindowStatus[partner_key]) {/* Check if the chat window for this convo has been registered  */
-                                const sender_id = translateSenderId(messageInfo.sender_id);/* Translate sender_id into 0,1
-                                with O is user and 1 is for partner */
-
-                                if (index === 0) {/* Remove previous message name tag if it's from the same sender */
-                                    if (chatWindowStatus[partner_key].headChatOwner == sender_id) {
-                                        $(`#${partner_key}`).find('.message').first().find('.user-name').remove();
-                                    }
-                                }
-
-                                if (messageInfo.sender_id != senders_id[index + 1]) {/* Create message, add name tag or not depend on the next message sender */
-                                    message = createMessage(messageInfo.content, messageInfo.receiver_type, messageInfo.id, chatWindowStatus[partner_key].headChatOwner, messageInfo.sender_name);
-                                } else {
-                                    message = createMessage(messageInfo.content, messageInfo.receiver_type, messageInfo.id, chatWindowStatus[partner_key].headChatOwner);
-                                }
-
-                                if (chatWindowStatus[partner_key].headChatOwner == sender_id) {/* Create or get the previous message block */
-                                    messageBlock = $('.message-block', `#${partner_key}`).first();
-                                } else {
-                                    chatWindowStatus[partner_key].headChatOwner = sender_id;
-                                    messageBlock = createMessageBlock(messageInfo);
-                                    $(`#${partner_key}`).prepend(messageBlock);
-                                }
-                                messageBlock.find('.messages-wrapper').prepend(message);
-                                if ((messageInfo.receiver_type === 'user' && !(messageInfo.seen_at)) || (messageInfo.receiver_type === 'group' && messageInfo.unseen)) {
-                                    readObserver.observe(message[0]);
-                                }
-                                chatWindowStatus[partner_key].headTime = messageInfo.id;
-                            }
-                        })
+                        buildMessageUpward(messages, partner_key);
                         const newScrollHeight = $(`#chat-window`)[0].scrollHeight;
                         $(`#chat-window`)[0].scrollTo(0, newScrollHeight - oldScrollHeight);/* Fix window jump to top on prepend */
                         if (chatWindowStatus[partner_key].olderMessages) {/*Only add intersection event again if there's still messages to be loaded */
@@ -431,7 +455,9 @@
     function createChatWindow(partner_key) {
         const template = $('#chat-window-content-template');
         const chatWindowContent = template.find('.chat-window-content').clone(true);
+        const spinner = '<div class="flex w-full justify-center loading hidden" role="status"> <svg aria-hidden="true" class="w-8 h-8 mr-2 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"> <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg><span class="sr-only">Loading...</span></div>';
         chatWindowContent.attr('id', partner_key);
+        chatWindowContent.append(spinner);
         $('#chat-window').append(chatWindowContent);
         return chatWindowContent;
     }
@@ -456,6 +482,7 @@
         const message = template.find('.message').clone(true);
         message.attr('data-id', id);
         message.attr('data-type', type);
+        message.attr('id', `${type}-message-${id}`);
         if (chatOwner) {
             message.addClass('rounded-mr');
         } else {
@@ -507,6 +534,51 @@
             }
         }
         return message;
+    }
+
+    function buildMessageUpward(messages, partner_key) {
+        const senders_id = messages.map(message => message.sender_id);
+        if (messages.length < 10) {
+            chatWindowStatus[partner_key].olderMessages = false;
+        }
+        messages.forEach((messageInfo, index) => {
+            let message;
+            let messageBlock;
+            if (chatWindowStatus[partner_key]) {/* Check if the chat window for this convo has been registered  */
+                const sender_id = translateSenderId(messageInfo.sender_id);/* Translate sender_id into 0,1
+                                with O is user and 1 is for partner */
+
+                if (index === 0) {/* Remove previous message name tag if it's from the same sender */
+                    if (chatWindowStatus[partner_key].headChatOwner == sender_id) {
+                        $(`#${partner_key}`).find('.message').first().find('.user-name').remove();
+                    }
+                }
+
+                if (messageInfo.sender_id != senders_id[index + 1]) {/* Create message, add name tag or not depend on the next message sender */
+                    message = createMessage(messageInfo.content, messageInfo.receiver_type, messageInfo.id, chatWindowStatus[partner_key].headChatOwner, messageInfo.sender_name);
+                } else {
+                    message = createMessage(messageInfo.content, messageInfo.receiver_type, messageInfo.id, chatWindowStatus[partner_key].headChatOwner);
+                }
+
+                if (chatWindowStatus[partner_key].headChatOwner == sender_id) {/* Create or get the previous message block */
+                    if ($('.message-block', `#${partner_key}`).length) {
+                        messageBlock = $('.message-block', `#${partner_key}`).first();
+                    } else {
+                        messageBlock = createMessageBlock(messageInfo);
+                        $(`#${partner_key}`).prepend(messageBlock);
+                    }
+                } else {
+                    chatWindowStatus[partner_key].headChatOwner = sender_id;
+                    messageBlock = createMessageBlock(messageInfo);
+                    $(`#${partner_key}`).prepend(messageBlock);
+                }
+                messageBlock.find('.messages-wrapper').prepend(message);
+                if ((messageInfo.receiver_type === 'user' && !(messageInfo.seen_at)) || (messageInfo.receiver_type === 'group' && messageInfo.unseen)) {
+                    readObserver.observe(message[0]);
+                }
+                chatWindowStatus[partner_key].headId = messageInfo.id;
+            }
+        })
     }
 
     function openMenu(menu) {
@@ -604,14 +676,15 @@
     }
 
     function sendMessage(form) {
-        let values = form.find('textarea').val();
-        form.find('textarea').val('');
+        const data = new FormData(form[0]);
         const partner_key = currPartnerKey;
         const [partner_type, partner_id] = currPartnerKey.split('-');
+        data.append('receiver_id', partner_id);
+        data.append('receiver_type', partner_type);
         let message = {
             sender_id: {{Auth::id()}},
             sender_name: "{{Auth::user()->name}}",
-            content: values,
+            content: form.find('textarea').val(''),
             receiver_id: partner_id,
             receiver_type: partner_type
         }
@@ -619,20 +692,19 @@
         let messageElement = showMessage(message);
         $.ajax({
             url: "{{route('chat.send')}}",
-            data: {
-                input: values,
-                receiver_id: partner_id,
-                receiver_type: partner_type
-            },
             type: 'POST',
+            data: data,
+            processData: false,
+            contentType: false,
             success: function (res) {
-                let content = values.length > 20 ? values.substring(0, 20) + '...' : values;
-                const contact = $(`#contact-${partner_key}`);
-                contact.find('.last-content').text(content);
-                if (res.error) {
-                    const messageError = $('#message-template').find('.send-message-error').clone(true);
-                    messageElement.append(messageError);
-                }
+                console.log(res);
+                // let content = values.length > 20 ? values.substring(0, 20) + '...' : values;
+                // const contact = $(`#contact-${partner_key}`);
+                // contact.find('.last-content').text(content);
+                // if (res.error) {
+                //     const messageError = $('#message-template').find('.send-message-error').clone(true);
+                //     messageElement.append(messageError);
+                // }
             },
             error: function (xhr) {
                 xhr = JSON.parse(xhr.responseText);
@@ -640,6 +712,7 @@
             }
         })
     }
+
 
     $(document).ready(function () {
         $.ajaxSetup({
@@ -659,7 +732,7 @@
             });
         Echo.private("chat.{{Auth::id()}}")
             .listen('FriendListUpdated', function (event) {
-                // friends_id = event.friends_id;
+                friends_id = event.friends_id;
                 reloadContent('#contacts-user');
             })
             .listen('ReceivedFriendRequest', function (event) {
@@ -691,14 +764,71 @@
                 contact.find('.last-content').text(content);
                 showMessage(message);
             });
-        $('#message-tab').on('click',function(){
-            if(window.innerWidth >= 1024){
+        /*Autocomplete for chat*/
+        chatTextAreaJquery.on("input", function () {
+            chatInput = $(this).val();
+            let lastWord;
+            let words = chatInput.trim().split(" ");
+            lastWord = words.pop();
+            $(this).autocomplete({
+                source: function (request, response) {
+                    if (chatInput[chatInput.length - 1] === ' ' || lastWord.length <= 2) {
+                        response([]);
+                    } else {
+                        $.ajax({
+                            url: "{{route('chat.autocomplete')}}",
+                            method: "GET",
+                            data: {
+                                query: lastWord
+                            },
+                            success: function (res) {
+                                response(res);
+                            },
+                            error: function () {
+                                response([]);
+                            }
+                        });
+                    }
+                },
+                minLength: 3,
+                select: function (event, ui) {
+                    words.push(ui.item.value);
+                    $(this).val(words.join(" "));
+                    return false;
+                }, focus: function (event, ui) {
+                    let temp = [...words];
+                    temp.push(ui.item.value);
+                    let joinValue = temp.join(" ")
+                    let lastIndex = joinValue.lastIndexOf(' ') + 1;
+                    $(this).val(joinValue);
+                    chatTextArea.setSelectionRange(lastIndex + lastWord.length, lastIndex + ui.item.value.length);
+                    return false;
+                }, autoFocus: true
+            })
+        });
+        chatTextAreaJquery.on("keydown", function (event) {
+            if (event.keyCode === 9 && $(this).autocomplete("instance").menu.active) {
+                event.preventDefault();
+                $(this).autocomplete("instance").menu.active.children("li:first").trigger("click");
+                chatTextArea.selectionStart = chatTextArea.selectionEnd;
+            }
+        });
+        chatTextAreaJquery.on("keydown", function (event) {
+            if (event.keyCode === $.ui.keyCode.ESCAPE) {
+                $(this).val(chatInput); // Restore the original input value
+            }
+        }).on("focus", function () {
+            chatInput = $(this).val(); // Store the original input value on focus
+        });
+        /*--------*/
+        $('#message-tab').on('click', function () {
+            if (window.innerWidth >= 1024) {
                 $('#sidebar-contact-wrapper').toggleClass('lg:w-1/5 lg:min-w-[20rem]');
-            }else{
+            } else {
                 $('#sidebar-contact-wrapper').removeClass('lg:w-1/5 lg:min-w-[20rem]');
                 $('#sidebar-contact-wrapper').toggleClass('w-0 w-[20rem]');
             }
-            
+
         })
         $('.toast-notif').on('click', function () {
             $(this).addClass('hidden');
@@ -718,10 +848,9 @@
             $(".search-filter-type[data-target='#search-contact']").trigger('click');
         });
         $('#search-form').on('submit', function (event) {
-            console.log('test');
             event.preventDefault();
-            const val = $(this).find('input').val();
-            // $(this)[0].reset();
+            let val = $(this).find('input').val();
+            val = val.replace(' ', '%20');
             const contactUrl = "{{route('chat.index')}}" + `?search=${val} #search-contact-reload`;
             const messageUrl = "{{route('chat.index')}}" + `?search=${val} #search-message-reload`;
             $('#search-contact').load(contactUrl, function (response, status, xhr) {
@@ -743,7 +872,6 @@
             let newPage = parseInt(page) + inc;
             const search = reloadElement.data('search');
             const contactUrl = "{{route('chat.index')}}" + `?search=${search}&${pageTarget}s=${newPage} #${pageTarget}-reload`;
-            console.log(contactUrl);
             $(`#${pageTarget}`).load(contactUrl, function (response, status, xhr) {
                 if (status == "error") {
                     console.log(xhr.statusText);
@@ -841,6 +969,9 @@
             })
         })
         // Send message to server on input
+        $('#upload-attachment-btn').on('click', function () {
+            $('#attachment-input').trigger('click');
+        });
         chatInputForm.on('keydown', function (event) {/* Map Ctrl+Enter to submit action */
             if (event.keyCode === 13 && event.ctrlKey) {
                 sendMessage($(this));
@@ -869,7 +1000,7 @@
                 if (!chatWindowStatus[partner_key]) {
                     chatWindowStatus[partner_key] = {
                         "updated": false,
-                        "headTime": 0,
+                        "headId": 0,
                         "headChatOwner": 0,
                         "tailChatOwner": 0,
                         "olderMessages": true
@@ -884,7 +1015,7 @@
                             const recent_messages = res.recent_messages;
                             if (recent_messages.length) {
                                 chatWindowStatus[partner_key].updated = true;
-                                chatWindowStatus[partner_key].headTime = recent_messages[0].id;
+                                chatWindowStatus[partner_key].headId = recent_messages[0].id;
                                 chatWindowStatus[partner_key].headChatOwner = (recent_messages[0].sender_id == {{Auth::id()}} ? 0 : recent_messages[0].sender_id);
                                 $.each(recent_messages, function (key, value) {
                                     showMessage(value);
@@ -1056,6 +1187,72 @@
             })
         });
         //     ------
+
+        $('#search-message').on('click', '.search-message-result', function () {
+            const contactType = $(this).data('type');
+            const contactId = $(this).data('contactid');
+            const messageId = $(this).data('messageid');
+            const partner_key = `${contactType}-${contactId}`;
+            let from;
+            let to;
+            currPartnerKey = partner_key;
+            const contactChatWindow = $(`#${partner_key}`).length ? $(`#${partner_key}`) : createChatWindow(partner_key);
+            $('.chat-window-content:not(.hidden)').addClass('hidden');
+            contactChatWindow.removeClass('hidden');
+            contactChatWindow.find('.loading').removeClass('hidden');
+            if (!chatWindowStatus[partner_key]) {
+                chatWindowStatus[partner_key] = {
+                    "updated": false,
+                    "headId": 0,
+                    "headChatOwner": 0,
+                    "tailChatOwner": 0,
+                    "olderMessages": true
+                };
+            }
+            if (chatWindowStatus[partner_key].headId !== 0 && parseInt(chatWindowStatus[partner_key].headId) <= parseInt(messageId)) {
+                contactChatWindow.find('.loading').addClass('hidden');
+                const message = $(`#${contactType}-message-${messageId}`);
+                message[0].scrollIntoView(false);
+                message.addClass('bg-yellow-500');
+                setTimeout(function () {
+                    message.removeClass('bg-yellow-500');
+                }, 300);
+                return;
+            }
+            if (chatWindowStatus[partner_key].headId === 0) {
+                to = 0;
+            }
+            if (parseInt(chatWindowStatus[partner_key].headId) > parseInt(messageId)) {
+                to = parseInt(chatWindowStatus[partner_key].headId);
+            }
+            from = parseInt(messageId) - 10;
+            $.ajax({
+                url: "{{route('user.message.search')}}" + `/${contactType}/${contactId}/${from}/${to}`,
+                type: "GET",
+                success: function (res) {
+                    if (res.messages.length) {
+                        const messages = res.messages;
+                        buildMessageUpward(messages, partner_key);
+                        if (chatWindowStatus[partner_key].olderMessages) {/*Only add intersection event again if there's still messages to be loaded */
+                            observer.observe($(`#${partner_key}`).find('.message').first()[0]);
+                        }
+                    }
+                    contactChatWindow.find('.loading').addClass('hidden');
+                    const message = $(`#${contactType}-message-${messageId}`);
+                    message[0].scrollIntoView(false);
+                    message.addClass('bg-yellow-500');
+                    setTimeout(function () {
+                        message.focus();
+                        message.removeClass('bg-yellow-500');
+                    }, 500);
+                },
+                error: function (xhr) {
+                    xhr = JSON.parse(xhr.responseText);
+                    alert(xhr.message);
+                }
+            })
+
+        })
     })
 </script>
 </body>
