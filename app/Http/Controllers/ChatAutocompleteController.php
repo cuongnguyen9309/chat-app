@@ -9,7 +9,14 @@ class ChatAutocompleteController extends Controller
 {
     public function autocomplete(Request $request)
     {
-        $words = DB::table('chat_autocompletes')->where('content', 'like', '%' . $request->get('query') . '%')->get()->pluck('content');
+        $words = DB::table('chat_autocompletes')
+            ->select('id', 'full')
+            ->where('full', 'like', '%' . $request->get('query') . '%')
+            ->union(DB::table('abbreviations')
+                ->where('short', 'like', '%' . $request->get('query') . '%')
+                ->select('id', 'full')
+            )
+            ->get()->pluck('full');
         return response()->json($words);
     }
 }

@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->text('content')->default('');
+            $table->text('content')->default('')->nullable();
             $table->unsignedBigInteger('sender_id');
             $table->unsignedBigInteger('receiver_id');
             $table->dateTime('seen_at')->nullable();

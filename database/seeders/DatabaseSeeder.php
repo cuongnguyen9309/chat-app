@@ -21,7 +21,9 @@ class DatabaseSeeder extends Seeder
             GroupMessageSeeder::class,
             ChatAutocompletesSedder::class,
             FileTypesSeeder::class,
-            FileTypeExtensionSeeder::class
+            FileTypeExtensionSeeder::class,
+            ReactionSeeder::class,
+            AbbreviationSeeder::class
         ]);
     }
 }

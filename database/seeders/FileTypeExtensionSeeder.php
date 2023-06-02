@@ -14,7 +14,8 @@ class FileTypeExtensionSeeder extends Seeder
     public function run(): void
     {
         $items = [
-            ['file_type_id' => 1, 'name' => 'png']
+            ['file_type_id' => 1, 'name' => 'png'],
+            ['file_type_id' => 10, 'name' => 'txt'],
         ];
         DB::table('file_type_extension')->insert($items);
     }

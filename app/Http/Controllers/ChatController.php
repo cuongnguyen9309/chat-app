@@ -9,6 +9,7 @@ use App\Models\FileType;
 use App\Models\Group;
 use App\Models\GroupMessage;
 use App\Models\Message;
+use App\Models\Reaction;
 use App\Models\User;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class ChatController extends Controller
     public function index(Request $request): View
     {
         $user = User::findOrFail(Auth::id());
+        $user->makeVisible(['add_friend_link']);
         $messages_sent = DB::table('messages')
             ->where('sender_id', Auth::id())
             ->select('id', 'content', 'created_at', 'receiver_id as user_id', DB::raw("'0' is_received"));
@@ -87,7 +89,6 @@ class ChatController extends Controller
         $input = $request->get('search') ?? null;
         if (!is_null($input)) {
             $input = trim($input);
-//            $input = preg_replace('/\s/', '%', $input);
             $search_contacts = DB::query()
                 ->fromSub(DB::table('users')
                     ->join('friendship', 'friendship.friend_id', '=', 'users.id')
@@ -142,11 +143,12 @@ class ChatController extends Controller
             $search_messages_page = 0;
             $search_messages_page_num = 0;
         }
-//        dd($search_messages);
+
+        $reactions = Reaction::all();
         return view('client.pages.chat', compact('friends', 'joined_groups', 'friendRequests', 'groupRequests',
             'search_contacts', 'search_contacts_page', 'search_contacts_page_num',
             'search_messages', 'search_messages_page', 'search_messages_page_num',
-            'input', 'user'));
+            'input', 'user', 'reactions'));
     }
 
     public function recent($type, $id)
@@ -178,7 +180,7 @@ class ChatController extends Controller
                 $messages = DB::table('group_messages')
                     ->join('users as senders', 'group_messages.sender_id', '=', 'senders.id')
                     ->join('groups as receivers', 'group_messages.receiver_id', '=', 'receivers.id')
-                    ->leftJoin('group_message_user_unseen', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
+                    ->leftJoinSub(DB::table('group_message_user_unseen')->where('user_id', Auth::id()), 'group_message_user_unseen', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
                     ->select('group_messages.*',
                         'group_message_user_unseen.created_at as unseen',
                         'senders.name as sender_name',
@@ -188,7 +190,6 @@ class ChatController extends Controller
                         DB::raw("'group' as receiver_type")
                     )
                     ->where('group_messages.receiver_id', $id)
-                    ->orderBy('created_at', 'DESC')
                     ->orderBy('id', 'DESC')
                     ->limit(10)
                     ->get();
@@ -196,13 +197,38 @@ class ChatController extends Controller
             default:
                 abort(404);
         }
+        $message_ids = $messages->pluck('id')->all();
+        $messageType = $type === 'group' ? 'App\Models\GroupMessage' : 'App\Models\Message';
+        $attachments = DB::table('attachments')
+            ->join('file_types', 'file_types.id', '=', 'attachments.file_type_id')
+            ->whereIn('attachments.attachmentable_id', $message_ids)->where('attachments.attachmentable_type', $messageType)
+            ->select('attachments.*', 'file_types.image_url as thumbnail')
+            ->get();
+        $attachment_map = [];
+        foreach ($attachments as $attachment) {
+            $attachment_map[$attachment->attachmentable_id] = $attachment;
+        }
+        $reaction_table = $type === 'group' ? 'group_message_reaction_user' : 'message_reaction_user';
+        $reactions = DB::table('reactions')
+            ->join($reaction_table . ' as reaction_relation', 'reaction_relation.reaction_id', '=', 'reactions.id')
+            ->join('users', 'users.id', 'reaction_relation.user_id')
+            ->whereIn('reaction_relation.' . ($type === 'group' ? 'group_' : '') . 'message_id', $message_ids)
+            ->select('reactions.*', 'users.name as user_name', 'reaction_relation.user_id as user_id', 'reaction_relation.' . ($type === 'group' ? 'group_' : '') . 'message_id as message_id', 'reaction_relation.id as relation_id')
+            ->get();
+        $reaction_map = [];
+        foreach ($reactions as $reaction) {
+            $reaction_map[$reaction->message_id][] = $reaction;
+        }
+        foreach ($messages as $message) {
+            $message->attachment = $attachment_map[$message->id] ?? null;
+            $message->reaction = $reaction_map[$message->id] ?? null;
+        }
         $reverse = $messages->reverse()->values()->all();
         return response()->json(['recent_messages' => $reverse]);
     }
 
     public function sendChat(Request $request)
     {
-        $builder = new \AshAllenDesign\ShortURL\Classes\Builder();
         switch ($request['receiver_type']) {
             case 'user':
                 $message = Message::create([
@@ -224,9 +250,12 @@ class ChatController extends Controller
             default:
                 abort(404);
         }
+        $attachment = null;
         if ($request->file('attachment')) {
+            $file_name = uniqid() . '_' . $request->file('attachment')->getClientOriginalName();
+            $request->file('attachment')->storeAs('attachments', $file_name, 'asset_public');
             $attachment = $message->attachment()->create([
-                'name' => $request->file('attachment')->getClientOriginalName(),
+                'name' => $file_name,
                 'file_type_id' => DB::table('file_types')
                     ->join('file_type_extension', 'file_type_extension.file_type_id', '=', 'file_types.id')
                     ->select('file_types.id as id', 'file_type_extension.name as name')
@@ -234,14 +263,12 @@ class ChatController extends Controller
                     ->first()->id,
                 'file_size' => $request->file('attachment')->getSize()
             ]);
-            $shortURLObject = $builder->destinationUrl(route('attachment.download', $attachment->id))->make();
-            $shortURL = $shortURLObject->default_short_url;
-            $attachment->short_url = $shortURL;
             $attachment->save();
+            $message->attachment = $attachment;
+            $message->attachment->thumbnail = $attachment->fileType->image_url;
         }
         broadcast(new ReceiveChat($message, $request['receiver_type'], $message->sender->name))->toOthers();
-        return response()->json(['message' => $message, 'attachment' => $attachment]);
-
+        return response()->json(['message' => $message]);
     }
 
 

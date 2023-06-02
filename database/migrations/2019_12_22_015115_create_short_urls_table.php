@@ -18,8 +18,6 @@ class CreateShortUrlsTable extends Migration
             $table->text('destination_url');
             $table->string('url_key')->unique();
             $table->string('default_short_url');
-            $table->boolean('single_use');
-            $table->boolean('track_visits');
             $table->timestamps();
         });
     }

@@ -16,6 +16,8 @@ return new class extends Migration {
             $table->string('email')->unique();
             $table->boolean('is_admin')->default(0);
             $table->string('status')->default('offline');
+            $table->boolean('is_accept_stranger_request')->default(1);
+            $table->string('add_friend_link')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->text('image_url')->default('images/avatars/default-avatar.png');

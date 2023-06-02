@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('chat_autocompletes', function (Blueprint $table) {
             $table->id();
-            $table->string('content');
+            $table->string('full');
             $table->timestamps();
         });
     }

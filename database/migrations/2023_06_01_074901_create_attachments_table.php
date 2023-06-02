@@ -17,7 +17,6 @@ return new class extends Migration {
             $table->string('name');
             $table->unsignedBigInteger('file_type_id');
             $table->float('file_size');
-            $table->string('short_url')->nullable();
             $table->foreign('file_type_id')->references('id')->on('file_types');
             $table->timestamps();
         });

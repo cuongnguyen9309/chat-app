@@ -66,6 +66,16 @@ class GroupMessage extends Model
         return $this->morphOne(Attachment::class, 'attachmentable');
     }
 
+    public function reactions(): BelongsToMany
+    {
+        return $this->belongsToMany(Reaction::class, 'group_message_reaction_user', 'reaction_id', 'group_message_id');
+    }
+
+    public function reacted_users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'group_message_reaction_user', 'user_id', 'group_message_id');
+    }
+
     public function toSearchableArray()
     {
         return $this->only('id', 'content');

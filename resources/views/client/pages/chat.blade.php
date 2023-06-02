@@ -66,7 +66,7 @@
         <div
             {{--    {{$reverse ? 'ml-5' : 'mr-5'}}--}}
             class="user-image-wrapper w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center ">
-            <img class="user-image w-full h-full rounded-full" src="" alt="">
+            <img class="user-image w-full h-full object-cover rounded-full" src="" alt="">
         </div>
         <div class="messages-wrapper w-3/4">
             {{--Add chat message here--}}
@@ -74,27 +74,53 @@
     </div>
 
     {{--    Add rounded-mr if reverse, rounded-ml if not--}}
-    <div class="message text-black max-w-7xl my-4 bg-gray-200 py-3 px-2 duration-200 transition-colors">
+    <div
+        class="message group/message text-black max-w-7xl my-4 bg-gray-200 py-3 px-2 duration-200 transition-colors relative">
+        <button
+            class="reaction-hover-btn hidden group/reaction group-hover/message:block absolute z-10 bottom-0 left-6 translate-y-1/2">
+            <i
+                class="flex items-center justify-center bg-white p-1 rounded-full border-gray-300 border-[1px] text-gray-400 fa-regular fa-face-smile-beam"></i>
+            <span
+                class="hidden py-1.5 px-2 group-hover/reaction:inline-flex flex-row absolute -top-9 -translate-x-1/3 left-0 reaction-selection-wrapper w-32 justify-around items-start rounded-full bg-white">
+                @forelse($reactions as $reaction)
+                    <img data-reactionid="{{$reaction->id}}"
+                         class="react-btn w-6 h-6 bg-cover hover:scale-150 duration-200"
+                         src="{{$reaction->image_url}}" alt="">
+                @empty
+                @endforelse
+            </span>
+        </button>
     </div>
     {{--    UserInfo Tag. Append to new message when chat owner change--}}
     <p class="user-name leading-8 text-xs text-gray-500"></p>
     <p class="send-message-error text-red-600 text-xs">Message sending failed</p>
 
     {{-- Attachment view --}}
-    <div class="message-attachment">
+    <div class="message-attachment mt-3 ml-5">
         <div class="attachment-wrapper">
             <div class="attachment flex mb-2">
-                <div class="attachment-thumbnail-wrapper">
-                    <img class="attachment-thumbnail" src="{{asset('/images/file_thumbnails/audio.png')}}" alt="">
+                <div class="attachment-thumbnail-wrapper w-14 h-14 mr-3">
+                    <img class="attachment-thumbnail w-full h-full object-cover"
+                         src="{{asset('/images/file_thumbnails/audio.png')}}" alt="">
                 </div>
                 <div class="attachment-info">
-                    <p class="attachment-name">Attachment name</p>
-                    <p class="attachment-size">10 MB</p>
+                    <p class="attachment-name font-bold">Attachment name</p>
+                    <p class="attachment-size text-gray-500">10 MB</p>
                 </div>
-                <a class="download-link inline-block"><i class="fa-solid fa-download"></i></a>
+                <a class="download-link ml-10"><i
+                        class="fa-solid fa-download bg-white p-2 border-b-2 border-black rounded"></i></a>
             </div>
         </div>
     </div>
+
+    {{--Reaction template--}}
+    <div class="reaction-tray-wrapper flex">
+        <div
+            class="all-reactions group/all-reactions flex items-center justify-between rounded-full bg-white p-1 relative"></div>
+    </div>
+    <div
+        class="reacted_users_dropdown hidden group-hover/all-reactions:block absolute top-full rounded-xl z-20 p-2 bg-[rgba(0,0,0,0.8)] text-white"></div>
+    <div class="last-reaction rounded-full bg-white p-1 mr-2"></div>
 </div>
 <div class="hidden" id="chat-window-content-template">
     <div class="hidden chat-window-content w-full h-full">
@@ -107,6 +133,17 @@
         <span class="notif-content"></span>
     </div>
 </div>
+<table class="hidden" id="user-info-table-template">
+    <tr class="user-row hover:cursor-pointer hover:bg-gray-700 hover:text-white transition-colors duration-200">
+        <td><span class="flex items-center user-name">
+                <span class="w-[3rem] h-[3rem] min-w-[3rem] image-wrapper mr-3">
+                    <img class="user-image w-full h-full object-cover rounded-full" src="">
+                </span>
+            </span>
+        </td>
+        <td class="user-email"></td>
+    </tr>
+</table>
 <div class="flex flex-row h-full">
     <x-client.sidebar :user="$user"
                       :friends="$friends"
@@ -178,12 +215,7 @@
                 <input id="search-friend-input" type="text" placeholder="Friend ID"
                        class="bg-none w-full focus:outline-none text-black p-1 rounded-md mt-2" autocomplete="off">
             </form>
-            <x-client.friend-info/>
-            <div class="btn-wrapper flex items-center justify-center">
-                <button id="add-friend-button"
-                        class="hidden text-center bold bg-green-400 mt-5 p-2 rounded-xl">Add friend
-                </button>
-            </div>
+            <table id="add-friend-info-table" class="mt-2 bg-gray-200"></table>
             <div class="error hidden text-center">Invalid User ID</div>
         </div>
     </x-client.popup>
@@ -272,10 +304,23 @@
             focus:outline-none border-transparent focus:border-transparent focus:ring-0"
                         type="text" value="{{$user->name}}">
                     <div class="px-5 pb-5 mt-4">
-                        <table class="user-info w-3/4 min-w-[50px]">
+                        <div class="flex items-center mb-4">
+                            <input id="stranger-friend-request" type="checkbox"
+                                   {{$user->is_accept_stranger_request ? 'checked' : ''}}
+                                   name="is_accept_stranger_request"
+                                   class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                            <label for="stranger-friend-request"
+                                   class="ml-2 text-sm font-medium text-gray-900">Accept Stranger
+                                Friend Request</label>
+                        </div>
+                        <table class="user-info min-w-[50px]">
                             <tr>
                                 <td class="pr-5 text-gray-600">ID:</td>
                                 <td>{{$user->id}}</td>
+                            </tr>
+                            <tr>
+                                <td class="pr-5 text-gray-600">Your befriend link:</td>
+                                <td>{{$user->add_friend_link}}</td>
                             </tr>
                             <tr>
                                 <td class="pr-5 text-gray-600"><label for="edit-user-name">Email</label></td>
@@ -314,6 +359,36 @@
                         </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    </x-client.popup>
+    <x-client.popup popupId="friend-detail" title="Friend Info">
+        <div id="friend-info">
+            <header class="relative w-full min-w-[20rem] h-32 bg-authPage bg-cover">
+                <div id="friend-image-wrapper"
+                     class="img-wrapper w-24 h-24 absolute left-1/2 top-[100%] -translate-x-1/2 -translate-y-1/2">
+                    <img id="friend-image" class="w-full h-full object-cover rounded-full"
+                         src=""
+                         alt="">
+                </div>
+            </header>
+            <h2 id="friend-name" class="block text-center text-2xl mt-12 font-bold"></h2>
+            <div class="px-5 pb-5 mt-4">
+                <table class="user-info min-w-[50px]">
+                    <tr>
+                        <td class="pr-5 text-gray-600">ID:</td>
+                        <td id="friend-id-info"></td>
+                    </tr>
+                    <tr>
+                        <td class="pr-5 text-gray-600"><label for="edit-user-name">Email</label></td>
+                        <td id="friend-email-info"></td>
+                    </tr>
+                </table>
+                <div class="btn-wrapper flex justify-center items-center">
+                    <button id="add-friend-button"
+                            class="text-center bold bg-green-400 mt-5 p-2 rounded-xl">Add friend
+                    </button>
+                </div>
             </div>
         </div>
     </x-client.popup>
@@ -448,6 +523,18 @@
     chatTextArea.addEventListener("input", OnInput, false);
 
     /******/
+    function formatFileSize(sizeInBytes) {
+        const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+        let index = 0;
+        while (sizeInBytes >= 1024 && index < units.length - 1) {
+            sizeInBytes /= 1024;
+            index++;
+        }
+        return `${sizeInBytes.toFixed(1)} ${units[index]}`;
+
+    }
+
     function translateSenderId($id) {
         return ($id == {{Auth::id()}} ? 0 : $id);
     }
@@ -493,11 +580,15 @@
             infoTag.text(newChatOwnerName);
             message.append(infoTag);
         }
+        let pattern = /(https?:\/\/[^\s]+)/g;
+        let replacement = '<a class="in_message_link text-blue-500" href="$1" target="_blank">$1</a>';
+        content = content.replace(pattern, replacement);
         message.append(`<span>${content}</span>`);
         return message;
     }
 
     function showMessage(messageInfo) {
+        console.log(messageInfo.id);
         let partner_key = '';
         if (messageInfo['receiver_type'] === 'user') {/* create partner key */
             partner_key = messageInfo.sender_id == {{Auth::id()}} ? `user-${messageInfo['receiver_id']}` : `user-${messageInfo['sender_id']}`;
@@ -533,7 +624,62 @@
                 readObserver.observe(message[0]);
             }
         }
+        if (messageInfo.attachment) {
+            const attachmentElement = buildAttachment(messageInfo.attachment);
+            message.append(attachmentElement);
+        }
+        const reactionElement = showReaction(messageInfo.reaction);
+        if (reactionElement) {
+            message.append(reactionElement);
+        }
         return message;
+    }
+
+    function showReaction(reactions) {
+        const template = $('#message-template');
+        const reactionElement = template.find('.reaction-tray-wrapper').clone('true');
+        const allReactionsElement = reactionElement.find('.all-reactions');
+        const lastReactionElement = template.find('.last-reaction').clone('true');
+        const reactedUserDropDownElement = template.find('.reacted_users_dropdown').clone('true');
+        let reactionCount = 0;
+        let reactedUsers = [];
+        if (reactions) {
+            let reactionMap = {};
+            reactions.forEach((reaction) => {
+                if (!reactedUsers.includes(reaction.user_name)) {
+                    reactedUsers.push(reaction.user_name);
+                }
+                reactionCount++;
+                reactionMap[reaction.image_url] = reactionMap[reaction.id] ? reactionMap[reaction.id] + 1 : 1;
+            });
+            if (reactionCount) {
+                reactedUsers.forEach((reactedUser) => {
+                    reactedUserDropDownElement.append(`<span class="whitespace-nowrap">${reactedUser === "{{Auth::user()->name}}" ? 'You' : reactedUser}</span>`)
+                });
+                allReactionsElement.append(`<span class="mr-1">${reactionCount}</span>`)
+                allReactionsElement.append(reactedUserDropDownElement);
+            }
+            for (const image_url in reactionMap) {
+                allReactionsElement.append(`<img src=${image_url} class="w-6 h-6 bg-cover"></img>`)
+            }
+            if (Object.keys(reactionMap).length > 1) {
+                const lastReactionImageURL = Object.keys(reactionMap).pop();
+                lastReactionElement.append(`<img src=${lastReactionImageURL} class="w-6 h-6 bg-cover"></img>`);
+                reactionElement.prepend(lastReactionElement);
+            }
+            return reactionElement;
+        }
+        return null;
+    }
+
+    function buildAttachment(attachment) {
+        const template = $('#message-template');
+        const attachmentElement = template.find('.message-attachment').clone('true');
+        attachmentElement.find('.attachment-thumbnail').attr('src', `${attachment.thumbnail}`);
+        attachmentElement.find('.attachment-name').text(attachment.name);
+        attachmentElement.find('.attachment-size').text(formatFileSize(attachment.file_size * 1000));
+        attachmentElement.find('.download-link').attr('href', `{{route('attachment.download')}}/${attachment.name}`);
+        return attachmentElement;
     }
 
     function buildMessageUpward(messages, partner_key) {
@@ -626,16 +772,9 @@
         }, 2000);
     }
 
-    function resetAddFriendPopup() {
-        const popup = $('#add-friend-popup');
-        $('#add-friend-button').addClass('hidden');
-        popup.find('.friend-info').addClass('hidden');
-        popup.find('.error').addClass('hidden');
-        $('#search-friend-form')[0].reset();
-    }
 
     function closeAddFriendPopup() {
-        closePopup('#add-friend-popup', resetAddFriendPopup)
+        closePopup('#add-friend-popup')
     }
 
     function displayContactInfo(contact, popupID) {
@@ -684,12 +823,14 @@
         let message = {
             sender_id: {{Auth::id()}},
             sender_name: "{{Auth::user()->name}}",
-            content: form.find('textarea').val(''),
+            content: $('#chat-textarea').val(),
             receiver_id: partner_id,
-            receiver_type: partner_type
+            receiver_type: partner_type,
+            sender_image_url: "{{Auth::user()->image_url}}"
         }
         // Show message on client side first, show error if request fail later.
         let messageElement = showMessage(message);
+        form[0].reset();
         $.ajax({
             url: "{{route('chat.send')}}",
             type: 'POST',
@@ -697,14 +838,18 @@
             processData: false,
             contentType: false,
             success: function (res) {
-                console.log(res);
-                // let content = values.length > 20 ? values.substring(0, 20) + '...' : values;
-                // const contact = $(`#contact-${partner_key}`);
-                // contact.find('.last-content').text(content);
-                // if (res.error) {
-                //     const messageError = $('#message-template').find('.send-message-error').clone(true);
-                //     messageElement.append(messageError);
-                // }
+                let message = res.message;
+                let content = message.content > 20 ? message.content.substring(0, 20) + '...' : message.content;
+                const contact = $(`#contact-${partner_key}`);
+                contact.find('.last-content').text(content);
+                if (message.attachment) {
+                    const attachmentElement = buildAttachment(message.attachment);
+                    messageElement.append(attachmentElement);
+                }
+                if (res.error) {
+                    const messageError = $('#message-template').find('.send-message-error').clone(true);
+                    messageElement.append(messageError);
+                }
             },
             error: function (xhr) {
                 xhr = JSON.parse(xhr.responseText);
@@ -733,7 +878,7 @@
         Echo.private("chat.{{Auth::id()}}")
             .listen('FriendListUpdated', function (event) {
                 friends_id = event.friends_id;
-                if(event.event === 'acceptFriend'){
+                if (event.event === 'acceptFriend') {
                     showToastNotif(`You are now friend with ${event.friend.name}`);
                 }
                 reloadContent('#contacts-user');
@@ -768,6 +913,15 @@
                 let content = message.content.length > 20 ? message.content.substring(0, 20) + '...' : message.content;
                 contact.find('.last-content').text(content);
                 showMessage(message);
+            })
+            .listen('MessageReact', function (event) {
+                const message = $(`#${event.message_type}-message-${event.message.id}`);
+                let oldReactionElement = message.find('.reaction-tray-wrapper');
+                if (oldReactionElement.length) {
+                    oldReactionElement.remove();
+                }
+                const newReactionElement = showReaction(event.reactions);
+                message.append(newReactionElement);
             });
         /*Autocomplete for chat*/
         chatTextAreaJquery.on("input", function () {
@@ -804,9 +958,13 @@
                     let temp = [...words];
                     temp.push(ui.item.value);
                     let joinValue = temp.join(" ")
-                    let lastIndex = joinValue.lastIndexOf(' ') + 1;
                     $(this).val(joinValue);
-                    chatTextArea.setSelectionRange(lastIndex + lastWord.length, lastIndex + ui.item.value.length);
+                    if (ui.item.value.startsWith(lastWord)) {
+                        let lastIndex = joinValue.lastIndexOf(' ') + 1;
+                        chatTextArea.setSelectionRange(lastIndex + lastWord.length, lastIndex + ui.item.value.length);
+                    } else {
+                        chatTextArea.setSelectionRange(joinValue.length - ui.item.value.length, joinValue.length);
+                    }
                     return false;
                 }, autoFocus: true
             })
@@ -953,6 +1111,11 @@
         editUserInfo.on('submit', '#edit-user-info-form', function (event) {
             event.preventDefault();
             const data = new FormData($(this)[0]);
+            if ($(this).find('#stranger-friend-request').is(":checked")) {
+                data.append('is_accept_stranger_request', 1);
+            } else {
+                data.append('is_accept_stranger_request', 0);
+            }
             $.ajax({
                 url: "{{route('user.update')}}",
                 data: data,
@@ -960,7 +1123,6 @@
                 processData: false,
                 contentType: false,
                 success: function (res) {
-                    console.log(res.user);
                     reloadContent('#edit-user-info');
                     closePopup('#user-detail');
                     $('#user-info-sub-menu img').attr('src', res.user.image_url);
@@ -1031,6 +1193,10 @@
                                 $('.message', `#${partner_key}`).last()[0].scrollIntoView(false);
                                 observer.observe($(`#${partner_key}`).find('.message')[0]);
                             }
+                        },
+                        error: function (xhr) {
+                            xhr = JSON.parse(xhr.responseText);
+                            alert(xhr.message);
                         }
                     })
                 }
@@ -1110,32 +1276,64 @@
         $('#search-friend-form').on('submit', function (event) {
             event.preventDefault();
             const input = $('#search-friend-input');
-            let id = input.val();
+            let keyword = input.val();
             input.empty();
+            $('#add-friend-info-table').empty();
             $.ajax({
-                url: "{{route('user.info')}}" + `/${id}`,
+                url: "{{route('user.info')}}" + `/${keyword}`,
                 type: "GET",
                 success: function (res) {
-                    resetAddFriendPopup();
-                    displayContactInfo(res.user, '#add-friend-popup');
-                    if (res.user.id != {{Auth::id()}}) {
-                        $('#add-friend-button').removeClass('hidden');
+                    const users = res.users;
+                    if (users.length) {
+                        users.forEach((user) => {
+                            const template = $('#user-info-table-template');
+                            const userRow = template.find('.user-row').clone('true');
+                            userRow.find('.user-name').append(`<span>${user.name}</span>`);
+                            userRow.find('.user-image').attr('src', user.image_url);
+                            userRow.find('.user-email').text(user.email);
+                            userRow.attr('data-id', user.id);
+                            userRow.attr('data-name', user.name);
+                            userRow.attr('data-imageurl', user.image_url);
+                            userRow.attr('data-email', user.email);
+                            $('#add-friend-info-table').append(userRow);
+                        })
                     }
-                    addFriendId = id;
                 },
                 error: function (err) {
-                    resetAddFriendPopup();
                     $('#add-friend-popup').find('.error').removeClass('hidden');
                 }
             })
+        });
+        $('#add-friend-info-table').on('click', '.user-row', function () {
+            closePopup('#add-friend-popup');
+            $('#friend-image').attr('src', $(this).data('imageurl'));
+            $('#friend-name').text($(this).data('name'));
+            $('#friend-id-info').text($(this).data('id'));
+            $('#friend-email-info').text($(this).data('email'));
+            addFriendId = $(this).data('id');
+            if (friends_id.includes(addFriendId)) {
+                $('#add-friend-button').addClass('hidden');
+            } else {
+                $('#add-friend-button').removeClass('hidden');
+            }
+            showPopup('#friend-detail');
         })
         $('#add-friend-button').on('click', function () {
+            closePopup('#friend-detail');
             $.ajax({
                 url: "{{route('friend.add')}}" + `/${addFriendId}`,
                 type: "GET",
                 success: function (res) {
+                    if (res.error) {
+                        alert(res.error);
+                        return;
+                    }
                     const messageContent = `You has sent ${res.friend.name} a friend request`
                     showMessageModal(messageContent, closeAddFriendPopup);
+                },
+                error: function (xhr) {
+                    xhr = JSON.parse(xhr.responseText);
+                    alert(xhr.message);
                 }
             })
         });
@@ -1258,6 +1456,33 @@
             })
 
         })
+        /*Reaction*/
+        $('.reaction-hover-btn, .react-btn').on('click', function (event) {
+            event.stopPropagation();
+            const message = $(this).closest('.message').first();
+            const message_id = message.data('id');
+            const type = message.data('type');
+            let reaction_id = 1;
+            if ($(this).data('reactionid')) {
+                reaction_id = $(this).data('reactionid');
+            }
+            $.ajax({
+                url: "{{route('user.react')}}",
+                data: {
+                    message_id,
+                    type,
+                    reaction_id
+                },
+                type: "POST",
+                success: function (res) {
+                },
+                error: function (xhr) {
+                    xhr = JSON.parse(xhr.responseText);
+                    alert(xhr.message);
+                }
+            })
+        })
+        /*In message link*/
     })
 </script>
 </body>

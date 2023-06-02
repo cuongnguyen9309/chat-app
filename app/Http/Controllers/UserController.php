@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\FriendListUpdated;
+use App\Events\MessageReact;
 use App\Events\ReceivedFriendRequest;
 use App\Events\UserOffline;
 use App\Events\UserOnline;
@@ -21,10 +22,11 @@ use function PHPUnit\Framework\throwException;
 
 class UserController extends Controller
 {
-    public function getUser($id)
+    public function getUser($keyword)
     {
-        $user = User::findOrFail($id);
-        return response()->json(['user' => $user]);
+        $keyword = trim($keyword);
+        $users = DB::table('users')->where('name', 'like', '%' . $keyword . '%')->orWhere('email', 'like', '%' . $keyword . '%')->get();
+        return response()->json(['users' => $users]);
     }
 
     public function updateUser(Request $request)
@@ -48,6 +50,11 @@ class UserController extends Controller
                         'asset_public');
                 $user->image_url = $image_url;
             }
+            if ((int)$request->get('is_accept_stranger_request')) {
+                $user->is_accept_stranger_request = 1;
+            } else {
+                $user->is_accept_stranger_request = 0;
+            }
             $user->save();
             return $user;
         });
@@ -60,9 +67,30 @@ class UserController extends Controller
             abort(404);
         }
         $friend = User::find($id);
+        if ($friend->is_accept_stranger_request) {
+            $user = User::find(Auth::id());
+            $user->inRequestFriends()->attach($id, ['status' => 'pending']);
+            broadcast(new ReceivedFriendRequest($id, $user))->toOthers();
+        } else {
+            return response()->json(['error' => 'User does not accept stranger friend request']);
+        }
+        return response()->json(compact('friend'));
+    }
+
+    public function addFriendNoConfirm($id)
+    {
+        if (Auth::id() === $id) {
+            abort(404);
+        }
+        $friend = User::find($id);
         $user = User::find(Auth::id());
-        $user->inRequestFriends()->attach($id, ['status' => 'pending']);
-        broadcast(new ReceivedFriendRequest($id,$user))->toOthers();
+        if ($user->friends->contains('id', $id)) {
+            return response()->json('already friend');
+            abort(404);
+        }
+        $user->friends()->attach($id, ['status' => 'accepted']);
+        $user->isFriendOf()->attach($id, ['status' => 'accepted']);
+        broadcast(new FriendListUpdated($id, 'acceptFriend', $user))->toOthers();
         return response()->json(compact('friend'));
     }
 
@@ -80,7 +108,7 @@ class UserController extends Controller
                 $user->friends()->attach($id, ['status' => 'accepted']);
             });
             $event = 'acceptFriend';
-            broadcast(new FriendListUpdated($id,$event,$user))->toOthers();
+            broadcast(new FriendListUpdated($id, $event, $user))->toOthers();
             return response()->json(['friend' => $friend]);
         } else {
             abort(404);
@@ -92,7 +120,7 @@ class UserController extends Controller
         $event = 'removeFriend';
         User::findOrFail($id)->friends()->detach(Auth::id());
         User::findOrFail(Auth::id())->friends()->detach($id);
-        broadcast(new FriendListUpdated($id,$event))->toOthers();
+        broadcast(new FriendListUpdated($id, $event))->toOthers();
         return response()->json(['message' => 'success']);
     }
 
@@ -129,7 +157,7 @@ class UserController extends Controller
                 $messages = DB::table('group_messages')
                     ->join('users as senders', 'group_messages.sender_id', '=', 'senders.id')
                     ->join('groups as receivers', 'group_messages.receiver_id', '=', 'receivers.id')
-                    ->leftJoin('group_message_user_unseen', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
+                    ->leftJoinSub(DB::table('group_message_user_unseen')->where('user_id', Auth::id()), 'group_message_user_unseen', 'group_messages.id', '=', 'group_message_user_unseen.group_message_id')
                     ->select('group_messages.*',
                         'group_message_user_unseen.created_at as unseen',
                         'senders.name as sender_name',
@@ -146,6 +174,33 @@ class UserController extends Controller
                 break;
             default:
                 abort(404);
+        }
+        $message_ids = $messages->pluck('id')->all();
+        $messageType = $request->get('partner_type') === 'group' ? 'App\Models\GroupMessage' : 'App\Models\Message';
+        $attachments = DB::table('attachments')
+            ->join('file_types', 'file_types.id', '=', 'attachments.file_type_id')
+            ->whereIn('attachments.attachmentable_id', $message_ids)->where('attachments.attachmentable_type', $messageType)
+            ->select('attachments.*', 'file_types.image_url as thumbnail')
+            ->get();
+        $attachment_map = [];
+        foreach ($attachments as $attachment) {
+            $attachment_map[$attachment->attachmentable_id] = $attachment;
+        }
+        $reaction_table = $request->get('partner_type') === 'group' ? 'group_message_reaction_user' : 'message_reaction_user';
+        $type = $request->get('partner_type');
+        $reactions = DB::table('reactions')
+            ->join($reaction_table . ' as reaction_relation', 'reaction_relation.reaction_id', '=', 'reactions.id')
+            ->join('users', 'users.id', 'reaction_relation.user_id')
+            ->whereIn('reaction_relation.' . ($type === 'group' ? 'group_' : '') . 'message_id', $message_ids)
+            ->select('reactions.*', 'users.name as user_name', 'reaction_relation.user_id as user_id', 'reaction_relation.' . ($type === 'group' ? 'group_' : '') . 'message_id as message_id', 'reaction_relation.id as relation_id')
+            ->get();
+        $reaction_map = [];
+        foreach ($reactions as $reaction) {
+            $reaction_map[$reaction->message_id][] = $reaction;
+        }
+        foreach ($messages as $message) {
+            $message->attachment = $attachment_map[$message->id] ?? null;
+            $message->reaction = $reaction_map[$message->id] ?? null;
         }
         return response()->json(['messages' => $messages, 'id' => $request->get('headId')]);
     }
@@ -255,5 +310,34 @@ class UserController extends Controller
                 abort(404);
         }
         return response()->json(['messages' => $messages]);
+    }
+
+    public function react(Request $request)
+    {
+        switch ($request->type) {
+            case 'user':
+                $message = Message::findOrFail($request->message_id);
+                DB::table('message_reaction_user')
+                    ->insert([
+                        'message_id' => $request->message_id,
+                        'reaction_id' => $request->reaction_id,
+                        'user_id' => Auth::id()
+                    ]);
+                break;
+            case 'group':
+                $message = GroupMessage::findOrFail($request->message_id);
+                DB::table('group_message_reaction_user')
+                    ->insert([
+                        'group_message_id' => $request->message_id,
+                        'reaction_id' => $request->reaction_id,
+                        'user_id' => Auth::id()
+                    ]);
+                break;
+            default:
+                abort(404);
+                break;
+        }
+        broadcast(new MessageReact($message, $request->type));
+        return response()->json(['data' => $request->all()]);
     }
 }

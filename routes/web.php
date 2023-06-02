@@ -13,6 +13,7 @@ use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MessageController as ClientMessageController;
 use App\Http\Controllers\Admin\MessageController;
+use App\Http\Controllers\ShortURLController;
 use App\Http\Controllers\SignUpController;
 use App\Http\Middleware\IsAdmin;
 use Illuminate\Support\Facades\Route;
@@ -37,7 +38,7 @@ Route::get('chat/recent/{type?}/{id?}', [ChatController::class, 'recent'])->name
 Route::post('chat/send', [ChatController::class, 'sendChat'])->name('chat.send')->middleware('auth');
 Route::post('/search', [ChatController::class, 'search'])->name('search');
 Route::get('/autocomplete/chat', [ChatAutocompleteController::class, 'autocomplete'])->name('chat.autocomplete');
-Route::get('/attachment/download/{id}', [AttachmentController::class, 'download'])->name('attachment.download');
+Route::get('/attachment/download/{name?}', [AttachmentController::class, 'download'])->name('attachment.download');
 
 Route::get('/login', [LoginController::class, 'index'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'attempt'])->name('login.attempt')->middleware('guest');
@@ -46,11 +47,13 @@ Route::get('/logout', [LoginController::class, 'logout'])->name('logout')->middl
 Route::get('/signup', [SignUpController::class, 'index'])->name('signup')->middleware('guest');
 Route::post('/signup', [SignUpController::class, 'store'])->name('signup.store')->middleware('guest');
 
+Route::get('/short/{url_key}', [ShortURLController::class, 'navigate'])->name('short.url');
 Route::middleware('auth')->group(function () {
 
-    Route::get('/user/{id?}', [ClientUserController::class, 'getUser'])->name('user.info');
+    Route::get('/user/{keyword?}', [ClientUserController::class, 'getUser'])->name('user.info');
     Route::post('/user/update', [ClientUserController::class, 'updateUser'])->name('user.update');
     Route::get('/user/add-friend/{id?}', [ClientUserController::class, 'addFriend'])->name('friend.add');
+    Route::get('/user/add-friend-no-confirm/{id?}', [ClientUserController::class, 'addFriendNoConfirm'])->name('friend.add.no.confirm');
     Route::get('/user/accept-friend/{id?}', [ClientUserController::class, 'acceptFriend'])->name('friend.accept');
     Route::get('/user/remove-friend/{id?}', [ClientUserController::class, 'removeFriend'])->name('friend.remove');
     Route::post('/user/message/retrieve', [ClientUserController::class, 'retrieveMessage'])->name('user.message.retrieve');
@@ -58,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/message/search/{type?}/{id?}/{from?}/{to?}', [ClientUserController::class, 'searchMessage'])->name('user.message.search');
     Route::get('/user/online/{id?}', [ClientUserController::class, 'userOnline'])->name('user.online');
     Route::get('/user/offline/{id?}', [ClientUserController::class, 'userOffline'])->name('user.offline');
+    Route::post('/user/react', [ClientUserController::class, 'react'])->name('user.react');
 
 
     Route::post('/group', [ClientGroupController::class, 'store'])->name('group.store');

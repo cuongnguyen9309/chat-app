@@ -23,6 +23,7 @@ class FileTypesSeeder extends Seeder
             ['name' => 'email', 'image_url' => '/images/file_thumbnails/email.png'],
             ['name' => 'executable', 'image_url' => '/images/file_thumbnails/executable.png'],
             ['name' => 'font', 'image_url' => '/images/file_thumbnails/font.png'],
+            ['name' => 'text', 'image_url' => '/images/file_thumbnails/text.png'],
         ];
         DB::table('file_types')
             ->insert($items);

@@ -20,11 +20,17 @@ class FriendListUpdated implements ShouldBroadcast
      */
     public $friends_id = [];
     public $friend = null;
-    public function __construct(public $id,public string $event,$user = null)
+    public array $channels = [];
+
+    public function __construct(public $id, public string $event, $user = null)
     {
         $this->friend = $user;
+        if ($user) {
+            $this->channels[] = new PrivateChannel('chat.' . $user->id);
+        }
         $user = User::find($id);
         $this->friends_id = $user->friends->pluck('id');
+        $this->channels[] = new PrivateChannel('chat.' . $this->id);
     }
 
     /**
@@ -34,8 +40,6 @@ class FriendListUpdated implements ShouldBroadcast
      */
     public function broadcastOn(): array
     {
-        return [
-            new PrivateChannel('chat.' . $this->id),
-        ];
+        return $this->channels;
     }
 }

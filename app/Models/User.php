@@ -90,6 +90,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'add_friend_link'
     ];
 
     /**
@@ -100,6 +101,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+    
 
     public function friends(): BelongsToMany
     {
@@ -163,6 +165,26 @@ class User extends Authenticatable
     public function unseen_group_messages(): BelongsToMany
     {
         return $this->belongsToMany(GroupMessage::class, 'group_message_user_unseen', 'user_id', 'group_message_id')->withTimestamps();
+    }
+
+    public function message_reactions(): BelongsToMany
+    {
+        return $this->belongsToMany(Reaction::class, 'message_reaction_user', 'reaction_id', 'user_id');
+    }
+
+    public function group_message_reactions(): BelongsToMany
+    {
+        return $this->belongsToMany(Reaction::class, 'group_message_reaction_user', 'reaction_id', 'user_id');
+    }
+
+    public function reacted_messages(): BelongsToMany
+    {
+        return $this->belongsToMany(Message::class, 'message_reaction_user', 'message_id', 'user_id');
+    }
+
+    public function reacted_group_messages(): BelongsToMany
+    {
+        return $this->belongsToMany(GroupMessage::class, 'group_message_reaction_user', 'group_message_id', 'user_id');
     }
 
     public function toSearchableArray()

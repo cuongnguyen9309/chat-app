@@ -14,8 +14,10 @@ class ChatAutocompletesSedder extends Seeder
     public function run(): void
     {
         $items = [
-            ['content' => 'australia'],
-            ['content' => 'america'],
+            ['full' => 'australia'],
+            ['full' => 'austria'],
+            ['full' => 'america'],
+            ['full' => 'vietnam'],
             // Add more items as needed
         ];
 

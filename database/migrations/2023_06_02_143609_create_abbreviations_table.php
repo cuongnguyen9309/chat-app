@@ -10,13 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('group_messages', function (Blueprint $table) {
+        Schema::create('abbreviations', function (Blueprint $table) {
             $table->id();
-            $table->text('content')->default('')->nullable();
-            $table->unsignedBigInteger('sender_id');
-            $table->unsignedBigInteger('receiver_id');
+            $table->string('short');
+            $table->string('full');
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -25,6 +23,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('group_messages');
+        Schema::dropIfExists('acronyms');
     }
 };

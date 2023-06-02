@@ -5,7 +5,7 @@
      data-image="{{$contact->image_url}}"
      class="{{$isRequest ? ($contactType === 'user' ? 'friend-request' : 'group-request') : 'contact-info'}} flex flex-row hover:cursor-pointer py-5 px-5  hover:bg-gray-900 duration-150">
     <div class="user-image w-14 h-14 flex items-center relative justify-center ">
-        <img class="rounded-full w-full h-full"
+        <img class="rounded-full w-full h-full object-cover"
              src="{{asset($contact->image_url ?? 'images/avatars/default-avatar.png')}}" alt="">
         @if(!$isSearch)
             <div
