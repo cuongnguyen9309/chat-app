@@ -59,11 +59,14 @@
         </button>
         <button class="w-full border-[2px] border-white rounded-md py-3 px-5 flex items-center justify-center"
                 type="submit">
-            <i class="fa-brands fa-google mr-3"></i>Login with Google
+            <a href="{{route('google.redirect')}}"><i class="fa-brands fa-google mr-3"></i>Login with Google</a>
         </button>
         <a class="block text-sm mt-[3rem] underline decoration-gray-400" href="{{route('signup')}}">Don't have an
             account?
             Sign up here</a>
+        @error('login')
+        <div class="error text-red-600">{{$message}}</div>
+        @enderror
     </form>
 </div>
 <div

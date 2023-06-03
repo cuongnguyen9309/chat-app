@@ -8,6 +8,7 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\ChatAutocompleteController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\GoogleLoginController;
 use App\Http\Controllers\GroupController as ClientGroupController;
 use App\Http\Controllers\GroupMessageController;
 use App\Http\Controllers\LoginController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\SignUpController;
 use App\Http\Middleware\IsAdmin;
 use Illuminate\Support\Facades\Route;
 use \App\Http\Controllers\UserController as ClientUserController;
+use Laravel\Socialite\Facades\Socialite;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +45,8 @@ Route::get('/attachment/download/{name?}', [AttachmentController::class, 'downlo
 Route::get('/login', [LoginController::class, 'index'])->name('login')->middleware('guest');
 Route::post('/login', [LoginController::class, 'attempt'])->name('login.attempt')->middleware('guest');
 Route::get('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+Route::get('/auth/google/redirect', [GoogleLoginController::class, 'redirect'])->name('google.redirect');
+Route::get('/auth/google/callback', [GoogleLoginController::class, 'callback']);
 
 Route::get('/signup', [SignUpController::class, 'index'])->name('signup')->middleware('guest');
 Route::post('/signup', [SignUpController::class, 'store'])->name('signup.store')->middleware('guest');

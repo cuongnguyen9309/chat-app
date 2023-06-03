@@ -3,10 +3,11 @@
 @section('content')
     <div class="button-wrapper flex">
         <h1 class="text-4xl ml-5">Users</h1>
-        <button
+        <a
+            href="{{route('admin.user.create')}}"
             class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-16 duration-200 border border-gray-400 rounded shadow ml-auto mr-5 mt-3">
             Create New User
-        </button>
+        </a>
     </div>
 
 

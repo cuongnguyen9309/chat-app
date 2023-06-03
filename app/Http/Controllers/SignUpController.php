@@ -32,9 +32,8 @@ class SignUpController extends Controller
         $request['password'] = Hash::make($request['password']);
         $user = User::create($request);
 
-        $builder = new \AshAllenDesign\ShortURL\Classes\Builder();
-        $shortURLObject = $builder->destinationUrl(route('friend.add.no.confirm', $user->id))->make();
-        $user->add_friend_link = $shortURLObject->default_short_url;
+        $short_url = createShortUrl(route('friend.add.no.confirm', $user->id));
+        $user->add_friend_link = $short_url;
         $user->save();
         return redirect()->route('login');
     }

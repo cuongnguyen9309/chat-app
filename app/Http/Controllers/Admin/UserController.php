@@ -11,6 +11,7 @@ use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class UserController extends Controller
@@ -29,7 +30,7 @@ class UserController extends Controller
      */
     public function create()
     {
-        //
+        return view('admin.pages.user.create');
     }
 
     /**
@@ -37,7 +38,46 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $image_url = '';
+        if ($request->file('image')) {
+            $image_url = $request->file('image')
+                ->storeAs('images/avatars',
+                    uniqid() . '_' . $request->file('image')->getClientOriginalName(),
+                    'asset_public');
+        };
+        $request->validate([
+            'name' => 'required',
+            'email' => 'email|required|unique:users',
+            'password' => 'required|confirmed|min:6|max:32'
+        ], [
+            'email.required' => 'Email can not be empty',
+            'email.unique' => 'This email is already in used',
+            'password.required' => 'Password can not be empty',
+            'password.confirmed' => 'Password confirmation does not match',
+            'password.min' => 'Password length must be greater than 6',
+            'password.max' => 'Password length must be less than 32',
+        ]);
+        $request = $request->except(['password_confirmation', '_token', 'image']);
+
+        $request['password'] = Hash::make($request['password']);
+        if (isset($request['is_accept_stranger_request']) && $request['is_accept_stranger_request']) {
+            $request['is_accept_stranger_request'] = 1;
+        } else {
+            $request['is_accept_stranger_request'] = 0;
+        }
+        if (isset($request['is_admin']) && $request['is_admin']) {
+            $request['is_admin'] = 1;
+        } else {
+            $request['is_admin'] = 0;
+        }
+        if ($image_url) {
+            $request['image_url'] = $image_url;
+        }
+        $user = User::create($request);
+        $short_url = createShortUrl(route('friend.add.no.confirm', $user->id));
+        $user->add_friend_link = $short_url;
+        $user->save();
+        return redirect()->route('admin.user.index');
     }
 
     /**

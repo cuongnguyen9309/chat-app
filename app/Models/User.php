@@ -79,7 +79,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'image_url'
+        'image_url',
+        'is_admin',
+        'is_accept_stranger_request'
     ];
 
     /**
@@ -101,7 +103,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
-    
+
 
     public function friends(): BelongsToMany
     {

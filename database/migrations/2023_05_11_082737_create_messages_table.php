@@ -15,6 +15,8 @@ return new class extends Migration {
             $table->text('content')->default('')->nullable();
             $table->unsignedBigInteger('sender_id');
             $table->unsignedBigInteger('receiver_id');
+            $table->foreign('sender_id')->references('id')->on('users');
+            $table->foreign('receiver_id')->references('id')->on('users');
             $table->dateTime('seen_at')->nullable();
             $table->timestamps();
             $table->softDeletes();

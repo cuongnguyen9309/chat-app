@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->text('image_url')->default('images/avatars/default-avatar.png');
+            $table->string('google_id')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

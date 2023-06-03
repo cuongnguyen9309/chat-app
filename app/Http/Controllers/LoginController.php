@@ -33,7 +33,7 @@ class LoginController extends Controller
             }
             return redirect()->route('home');
         } else {
-            return redirect()->route('login')->with(['message' => 'Login failed']);
+            return redirect()->route('login')->withErrors(['login' => 'Invalid Email or Password']);
         }
     }
 
