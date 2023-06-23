@@ -98,10 +98,13 @@
     {{-- Attachment view --}}
     <div class="message-attachment mt-3 ml-5">
         <div class="attachment-wrapper">
+            <div class="image-attachment-wrapper w-80 mr-3 mb-2 hidden">
+                <img class="image-attachment w-full h-full object-cover" src="" alt="">
+            </div>
             <div class="attachment flex mb-2">
                 <div class="attachment-thumbnail-wrapper w-14 h-14 mr-3">
                     <img class="attachment-thumbnail w-full h-full object-cover"
-                         src="{{asset('/images/file_thumbnails/audio.png')}}" alt="">
+                         src="" alt="">
                 </div>
                 <div class="attachment-info">
                     <p class="attachment-name font-bold">Attachment name</p>
@@ -323,17 +326,8 @@
                                 <td>{{$user->add_friend_link}}</td>
                             </tr>
                             <tr>
-                                <td class="pr-5 text-gray-600"><label for="edit-user-name">Email</label></td>
-                                <td><input
-                                        data-oldvalue="{{$user->email}}"
-                                        name="email"
-                                        disabled id="edit-user-name"
-                                        class="disabled:text-black disabled:bg-transparent bg-transparent
-                                   disabled:border-none border-none focus:outline-none
-                                   border-transparent focus:border-transparent focus:ring-0 p-0"
-                                        type="text"
-                                        value="{{$user->email}}">
-                                </td>
+                                <td class="pr-5 text-gray-600">Email</td>
+                                <td>{{$user->email}}</td>
                             </tr>
                         </table>
                         <div class="btn-wrapper flex justify-center items-center">
@@ -580,15 +574,16 @@
             infoTag.text(newChatOwnerName);
             message.append(infoTag);
         }
-        let pattern = /(https?:\/\/[^\s]+)/g;
-        let replacement = '<a class="in_message_link text-blue-500" href="$1" target="_blank">$1</a>';
-        content = content.replace(pattern, replacement);
-        message.append(`<span>${content}</span>`);
+        if (content) {
+            let pattern = /(https?:\/\/[^\s]+)/g;
+            let replacement = '<a class="in_message_link text-blue-500" href="$1" target="_blank">$1</a>';
+            content = content.replace(pattern, replacement);
+            message.append(`<span>${content}</span>`);
+        }
         return message;
     }
 
     function showMessage(messageInfo) {
-        console.log(messageInfo.id);
         let partner_key = '';
         if (messageInfo['receiver_type'] === 'user') {/* create partner key */
             partner_key = messageInfo.sender_id == {{Auth::id()}} ? `user-${messageInfo['receiver_id']}` : `user-${messageInfo['sender_id']}`;
@@ -675,9 +670,15 @@
     function buildAttachment(attachment) {
         const template = $('#message-template');
         const attachmentElement = template.find('.message-attachment').clone('true');
-        attachmentElement.find('.attachment-thumbnail').attr('src', `${attachment.thumbnail}`);
+        if (attachment.file_type_id == 1) {
+            attachmentElement.find('.image-attachment').attr('src', `attachments/${attachment.name}`);
+            attachmentElement.find('.image-attachment-wrapper').removeClass('hidden');
+            attachmentElement.find('.attachment-thumbnail-wrapper').addClass('hidden');
+        } else {
+            attachmentElement.find('.attachment-thumbnail').attr('src', `${attachment.thumbnail}`);
+        }
         attachmentElement.find('.attachment-name').text(attachment.name);
-        attachmentElement.find('.attachment-size').text(formatFileSize(attachment.file_size * 1000));
+        attachmentElement.find('.attachment-size').text(formatFileSize(attachment.file_size));
         attachmentElement.find('.download-link').attr('href', `{{route('attachment.download')}}/${attachment.name}`);
         return attachmentElement;
     }
@@ -892,8 +893,10 @@
                 reloadContent('#group-requests');
             })
             .listen('ReceiveChat', function (event) {
-                console.log('receive');
                 const message = event.message;
+                message.attachment = event.attachment;
+                message.attachment.thumbnail = event.attachmentThumbnail;
+                console.log(message);
                 message.receiver_type = event.receiver_type;
                 message.sender_name = event.sender_name;
                 let partner_key = '';
@@ -910,7 +913,10 @@
                 }
                 contact.find('.unread_num').text(parseInt(oldVal) + 1);
                 /*update last message content*/
-                let content = message.content.length > 20 ? message.content.substring(0, 20) + '...' : message.content;
+                let content = '';
+                if (message.content) {
+                    content = message.content.length > 20 ? message.content.substring(0, 20) + '...' : message.content;
+                }
                 contact.find('.last-content').text(content);
                 showMessage(message);
             })
@@ -1123,6 +1129,7 @@
                 processData: false,
                 contentType: false,
                 success: function (res) {
+                    console.log(res);
                     reloadContent('#edit-user-info');
                     closePopup('#user-detail');
                     $('#user-info-sub-menu img').attr('src', res.user.image_url);

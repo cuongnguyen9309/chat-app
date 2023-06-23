@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->string('attachmentable_type');
             $table->string('name');
             $table->unsignedBigInteger('file_type_id');
-            $table->float('file_size');
+            $table->float('file_size', 20, 2);
             $table->foreign('file_type_id')->references('id')->on('file_types');
             $table->timestamps();
         });

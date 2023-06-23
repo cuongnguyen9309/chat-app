@@ -36,13 +36,10 @@ class UserController extends Controller
             $user = User::findOrFail(Auth::id());
             $request->validate([
                 'name' => ['required', Rule::unique('users')->ignore($id, 'id')],
-                'email' => ['required', 'email', Rule::unique('users')->ignore($id, 'id')],
-                'image' => 'mimes:jpeg,png,jpg,gif|max:10240'
+                'image' => 'mimes:jpeg,png,gif'
             ]);
             $name = $request->get('name');
-            $email = $request->get('email');
             $user->name = $name;
-            $user->email = $email;
             if ($request->file('image')) {
                 $image_url = $request->file('image')
                     ->storeAs('images/avatars',

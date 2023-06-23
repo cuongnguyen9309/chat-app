@@ -251,6 +251,7 @@ class ChatController extends Controller
                 abort(404);
         }
         $attachment = null;
+        $attachmentThumbnail = null;
         if ($request->file('attachment')) {
             $file_name = uniqid() . '_' . $request->file('attachment')->getClientOriginalName();
             $request->file('attachment')->storeAs('attachments', $file_name, 'asset_public');
@@ -266,8 +267,9 @@ class ChatController extends Controller
             $attachment->save();
             $message->attachment = $attachment;
             $message->attachment->thumbnail = $attachment->fileType->image_url;
+            $attachmentThumbnail = $attachment->fileType->image_url;
         }
-        broadcast(new ReceiveChat($message, $request['receiver_type'], $message->sender->name))->toOthers();
+        broadcast(new ReceiveChat($message, $request['receiver_type'], $message->sender->name, $attachment, $attachmentThumbnail))->toOthers();
         return response()->json(['message' => $message]);
     }
 

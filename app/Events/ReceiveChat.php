@@ -20,7 +20,7 @@ class ReceiveChat implements ShouldBroadcast
      */
     public array $channels = [];
 
-    public function __construct(public $message, public $receiver_type, public $sender_name)
+    public function __construct(public $message, public $receiver_type, public $sender_name, public $attachment, public $attachmentThumbnail)
     {
         if ($receiver_type === 'user') {
             ($this->channels)[] = new PrivateChannel('chat.' . $message->receiver_id);
