@@ -12,16 +12,16 @@ return new class extends Migration {
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
-            $table->string('email', 255)->unique();
+            $table->string('name', 250)->nullable();
+            $table->string('email', 250)->unique();
             $table->boolean('is_admin')->default(0);
-            $table->string('status')->default('offline');
+            $table->string('status', 100)->default('offline');
             $table->boolean('is_accept_stranger_request')->default(1);
-            $table->string('add_friend_link')->nullable();
+            $table->string('add_friend_link', 250)->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password', 250);
             $table->text('image_url');
-            $table->string('google_id')->nullable();
+            $table->string('google_id', 250)->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
