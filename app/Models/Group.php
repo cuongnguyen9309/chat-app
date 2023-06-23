@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Group extends Model
 {
-    use HasFactory, SoftDeletes, Searchable;
+    use HasFactory, SoftDeletes;
 
     protected $guarded = [];
 
@@ -74,5 +74,5 @@ class Group extends Model
     {
         return $this->hasMany(GroupMessage::class, 'receiver_id', 'id');
     }
-    
+
 }
