@@ -38,7 +38,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        $image_url = '';
+        $image_url = 'default-avatar.png';
         if ($request->file('image')) {
             $image_url = $request->file('image')
                 ->storeAs('images/avatars',
