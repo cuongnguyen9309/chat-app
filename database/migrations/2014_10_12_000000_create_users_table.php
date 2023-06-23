@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->string('add_friend_link')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->text('image_url');
+            $table->text('image_url')->nullable();
             $table->string('google_id')->nullable();
             $table->rememberToken();
             $table->timestamps();

@@ -29,10 +29,13 @@ class GroupController extends Controller
             ]);
             $name = $request->get('name');
             $groups_members = $request->get('selectFriends');
-            $image_url = $request->file('group-avatar')
-                ->storeAs('images/avatars',
-                    uniqid() . '_' . $request->file('group-avatar')->getClientOriginalName(),
-                    'asset_public');
+            $image_url = 'default-avatar.png';
+            if ($request->file('group-avatar')) {
+                $image_url = $request->file('group-avatar')
+                    ->storeAs('images/avatars',
+                        uniqid() . '_' . $request->file('group-avatar')->getClientOriginalName(),
+                        'asset_public');
+            }
             $admin_id = Auth::id();
             $created_by = Auth::id();
             $group = Group::create(compact('name', 'admin_id',
