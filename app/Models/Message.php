@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Scout\Searchable;
 
 /**
  * App\Models\Message
@@ -43,7 +42,7 @@ use Laravel\Scout\Searchable;
  */
 class Message extends Model
 {
-    use HasFactory, SoftDeletes, Searchable;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = ['content', 'sender_id', 'receiver_id'];
 
@@ -55,11 +54,6 @@ class Message extends Model
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'receiver_id', 'id');
-    }
-
-    public function toSearchableArray()
-    {
-        return $this->only('id', 'content');
     }
 
     public function attachment(): MorphOne

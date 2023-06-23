@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Laravel\Scout\Searchable;
 
 /**
  * App\Models\User
@@ -68,7 +67,7 @@ use Laravel\Scout\Searchable;
  */
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, Searchable;
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -189,9 +188,4 @@ class User extends Authenticatable
         return $this->belongsToMany(GroupMessage::class, 'group_message_reaction_user', 'group_message_id', 'user_id');
     }
 
-    public function toSearchableArray()
-    {
-        $array = $this->only('id', 'name', 'email');
-        return $array;
-    }
 }

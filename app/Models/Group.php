@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Scout\Searchable;
 
 /**
  * App\Models\Group
@@ -75,9 +74,5 @@ class Group extends Model
     {
         return $this->hasMany(GroupMessage::class, 'receiver_id', 'id');
     }
-
-    public function toSearchableArray()
-    {
-        return $this->only('id', 'name');
-    }
+    
 }

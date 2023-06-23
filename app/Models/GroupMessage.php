@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Scout\Searchable;
 
 /**
  * App\Models\GroupMessage
@@ -42,7 +41,7 @@ use Laravel\Scout\Searchable;
  */
 class GroupMessage extends Model
 {
-    use HasFactory, SoftDeletes, Searchable;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = ['content', 'sender_id', 'receiver_id'];
 
@@ -75,9 +74,5 @@ class GroupMessage extends Model
     {
         return $this->belongsToMany(User::class, 'group_message_reaction_user', 'user_id', 'group_message_id');
     }
-
-    public function toSearchableArray()
-    {
-        return $this->only('id', 'content');
-    }
+    
 }
