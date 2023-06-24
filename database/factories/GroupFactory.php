@@ -20,7 +20,7 @@ class GroupFactory extends Factory
         return [
             'name' => fake()->name(),
             'created_by' => User::all()->random(),
-            'image_url' => 'default-avatar.png'
+            'image_url' => 'images/avatars/default-avatar.png'
         ];
     }
 }

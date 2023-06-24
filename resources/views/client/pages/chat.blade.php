@@ -217,7 +217,7 @@
                 <input id="search-friend-input" type="text" placeholder="Friend ID"
                        class="bg-none w-full focus:outline-none text-black p-1 rounded-md mt-2" autocomplete="off">
             </form>
-            <table id="add-friend-info-table" class="mt-2 bg-gray-200"></table>
+            <table id="add-friend-info-table" class="mt-2 bg-gray-200 overflow-y-scroll"></table>
             <div class="error hidden text-center">Invalid User ID</div>
         </div>
     </x-client.popup>
