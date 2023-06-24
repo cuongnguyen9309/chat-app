@@ -52,8 +52,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-autocomplete/1.0.7/jquery.auto-complete.min.js"
             integrity="sha512-TToQDr91fBeG4RE5RjMl/tqNAo35hSRR4cbIFasiV2AAMQ6yKXXYhdSdEpUcRE6bqsTiB+FPLPls4ZAFMoK5WA=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    @vite('resources/css/app.css')
-    @vite('resources/js/bootstrap.js')
+    @vite(['resources/js/app.js'])
     <link rel="stylesheet" href="{{asset('css/main.css')}}">
     <title>Chat</title>
 </head>

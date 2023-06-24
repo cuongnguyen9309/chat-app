@@ -17,8 +17,7 @@
             -webkit-transition: color 9999s ease-out, background-color 9999s ease-out;
         }
     </style>
-    @vite('resources/css/app.css')
-    @vite('resources/js/bootstrap.js')
+    @vite(['resources/js/app.js'])
     <link rel="stylesheet" href="{{asset('css/main.css')}}">
     <title>Signup</title>
 </head>
